@@ -61,7 +61,8 @@
 /* USER CODE BEGIN PV */
 
 /* Tablica kard i sektorow */
-Box_typeDef CardSector;
+Stos_typeDef* STOS_CardSector;
+Stos_typeDef STOS_Read;
 
 /* Variable ADC */
 uint16_t ADC_tab[2];
@@ -300,6 +301,12 @@ int main(void) {
 					break;
 			}
 		}
+
+		if(popStos == 1)
+		{
+
+			STOS_Read = popItem(&STOS_CardSector);
+		}
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
@@ -416,6 +423,7 @@ int main(void) {
 					ssd1306_display_num(56, 45, CardID[2], 3, 14);
 					ssd1306_display_char(77, 45, '-', 14, 1);
 					ssd1306_display_num(84, 45, CardID[3], 3, 14);
+					pushItem(&STOS_CardSector,&LastCard,&LastSector);
 				} else {
 					for (int q = 0; q <= 3; q++)
 						LastSector[q] = CardID[q];

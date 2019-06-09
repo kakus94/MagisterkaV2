@@ -51,6 +51,9 @@ volatile uint8_t Scan_falg;
 volatile uint16_t CheckStatus_flag;
 volatile uint8_t noSendTCP;
 
+volatile uint8_t popStos;
+volatile uint8_t popDisplay;
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

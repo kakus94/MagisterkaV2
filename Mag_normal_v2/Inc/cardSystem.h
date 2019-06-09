@@ -14,16 +14,18 @@ typedef 	struct{
 	uint8_t CardID[4];
 	uint8_t SectorID[4];
 	uint16_t Iterator;
+
 	}item;
 
-typedef struct{
-	uint8_t pivot;
-	uint8_t readLast;
-	item itemTab[30];
+typedef struct stos{
+	item object;
+	struct stos * previous;
 
-}Box_typeDef;
+}Stos_typeDef;
 
 
-void itemAdd(Box_typeDef* box,uint8_t* card,uint8_t* sector);
+void itemAdd(Stos_typeDef* box,uint8_t* card,uint8_t* sector);
+uint8_t pushItem(Stos_typeDef** item,uint8_t* card,uint8_t* sector);
+Stos_typeDef popItem(Stos_typeDef** object);
 
 #endif /* CARDSYSTEM_H_ */
