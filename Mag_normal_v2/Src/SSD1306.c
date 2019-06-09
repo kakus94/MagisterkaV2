@@ -66,17 +66,14 @@ extern SPI_HandleTypeDef hspi6;
  *                           1: Writes to the display data ram
  * @retval None
  **/
-static void ssd1306_write_byte(uint8_t chData, uint8_t chCmd)
-{
+static void ssd1306_write_byte(uint8_t chData, uint8_t chCmd) {
 #ifdef INTERFACE_4WIRE_SPI
 
 	SSD1306_CS_CLR();
 
-	if (chCmd)
-	{
+	if (chCmd) {
 		SSD1306_DC_SET();
-	} else
-	{
+	} else {
 		SSD1306_DC_CLR();
 	}
 	SSD1306_WRITE_BYTE(chData);
@@ -143,8 +140,7 @@ static void ssd1306_write_byte(uint8_t chData, uint8_t chCmd)
  *
  * @retval None
  **/
-void ssd1306_display_on(void)
-{
+void ssd1306_display_on(void) {
 	ssd1306_write_byte(0x8D, SSD1306_CMD);
 	ssd1306_write_byte(0x14, SSD1306_CMD);
 	ssd1306_write_byte(0xAF, SSD1306_CMD);
@@ -157,8 +153,7 @@ void ssd1306_display_on(void)
  *
  * @retval  None
  **/
-void ssd1306_display_off(void)
-{
+void ssd1306_display_off(void) {
 	ssd1306_write_byte(0x8D, SSD1306_CMD);
 	ssd1306_write_byte(0x10, SSD1306_CMD);
 	ssd1306_write_byte(0xAE, SSD1306_CMD);
@@ -172,17 +167,14 @@ void ssd1306_display_off(void)
  * @retval  None
  **/
 
-void ssd1306_refresh_gram(void)
-{
+void ssd1306_refresh_gram(void) {
 	uint8_t i, j;
 
-	for (i = 0; i < 8; i++)
-	{
+	for (i = 0; i < 8; i++) {
 		ssd1306_write_byte(0xB0 + i, SSD1306_CMD);
 		__SET_COL_START_ADDR()
 		;
-		for (j = 0; j < 128; j++)
-		{
+		for (j = 0; j < 128; j++) {
 			ssd1306_write_byte(s_chDispalyBuffer[j][i], SSD1306_DAT);
 		}
 	}
@@ -196,17 +188,14 @@ void ssd1306_refresh_gram(void)
  * @retval  None
  **/
 
-void ssd1306_clear_screen(uint8_t chFill)
-{
+void ssd1306_clear_screen(uint8_t chFill) {
 	uint8_t i, j;
 
-	for (i = 0; i < 8; i++)
-	{
+	for (i = 0; i < 8; i++) {
 		ssd1306_write_byte(0xB0 + i, SSD1306_CMD);
 		__SET_COL_START_ADDR()
 		;
-		for (j = 0; j < 128; j++)
-		{
+		for (j = 0; j < 128; j++) {
 			s_chDispalyBuffer[j][i] = chFill;
 		}
 	}
@@ -224,24 +213,20 @@ void ssd1306_clear_screen(uint8_t chFill)
  * @retval None
  **/
 
-void ssd1306_draw_point(uint8_t chXpos, uint8_t chYpos, uint8_t chPoint)
-{
+void ssd1306_draw_point(uint8_t chXpos, uint8_t chYpos, uint8_t chPoint) {
 	uint8_t chPos, chBx, chTemp = 0;
 
-	if (chXpos > 127 || chYpos > 63)
-	{
+	if (chXpos > 127 || chYpos > 63) {
 		return;
 	}
 	chPos = 7 - chYpos / 8; // 
 	chBx = chYpos % 8;
 	chTemp = 1 << (7 - chBx);
 
-	if (chPoint)
-	{
+	if (chPoint) {
 		s_chDispalyBuffer[chXpos][chPos] |= chTemp;
 
-	} else
-	{
+	} else {
 		s_chDispalyBuffer[chXpos][chPos] &= ~chTemp;
 	}
 }
@@ -258,14 +243,11 @@ void ssd1306_draw_point(uint8_t chXpos, uint8_t chYpos, uint8_t chPoint)
  **/
 
 void ssd1306_fill_screen(uint8_t chXpos1, uint8_t chYpos1, uint8_t chXpos2,
-		uint8_t chYpos2, uint8_t chDot)
-{
+		uint8_t chYpos2, uint8_t chDot) {
 	uint8_t chXpos, chYpos;
 
-	for (chXpos = chXpos1; chXpos <= chXpos2; chXpos++)
-	{
-		for (chYpos = chYpos1; chYpos <= chYpos2; chYpos++)
-		{
+	for (chXpos = chXpos1; chXpos <= chXpos2; chXpos++) {
+		for (chYpos = chYpos1; chYpos <= chYpos2; chYpos++) {
 			ssd1306_draw_point(chXpos, chYpos, chDot);
 		}
 	}
@@ -283,48 +265,36 @@ void ssd1306_fill_screen(uint8_t chXpos1, uint8_t chYpos1, uint8_t chXpos2,
  * @retval
  **/
 void ssd1306_display_char(uint8_t chXpos, uint8_t chYpos, uint8_t chChr,
-		uint8_t chSize, uint8_t chMode)
-{
+		uint8_t chSize, uint8_t chMode) {
 	uint8_t i, j;
 	uint8_t chTemp, chYpos0 = chYpos;
 
 	chChr = chChr - ' ';
-	for (i = 0; i < chSize; i++)
-	{
-		if (chSize == 12)
-		{
-			if (chMode)
-			{
+	for (i = 0; i < chSize; i++) {
+		if (chSize == 12) {
+			if (chMode) {
 				chTemp = c_chFont1206[chChr][i];
-			} else
-			{
+			} else {
 				chTemp = ~c_chFont1206[chChr][i];
 			}
-		} else
-		{
-			if (chMode)
-			{
+		} else {
+			if (chMode) {
 				chTemp = c_chFont1608[chChr][i];
-			} else
-			{
+			} else {
 				chTemp = ~c_chFont1608[chChr][i];
 			}
 		}
 
-		for (j = 0; j < 8; j++)
-		{
-			if (chTemp & 0x80)
-			{
+		for (j = 0; j < 8; j++) {
+			if (chTemp & 0x80) {
 				ssd1306_draw_point(chXpos, chYpos, 1);
-			} else
-			{
+			} else {
 				ssd1306_draw_point(chXpos, chYpos, 0);
 			}
 			chTemp <<= 1;
 			chYpos++;
 
-			if ((chYpos - chYpos0) == chSize)
-			{
+			if ((chYpos - chYpos0) == chSize) {
 				chYpos = chYpos0;
 				chXpos++;
 				break;
@@ -332,8 +302,7 @@ void ssd1306_display_char(uint8_t chXpos, uint8_t chYpos, uint8_t chChr,
 		}
 	}
 }
-static uint32_t pow(uint8_t m, uint8_t n)
-{
+static uint32_t pow(uint8_t m, uint8_t n) {
 	uint32_t result = 1;
 	while (n--)
 		result *= m;
@@ -341,23 +310,18 @@ static uint32_t pow(uint8_t m, uint8_t n)
 }
 
 void ssd1306_display_num(uint8_t chXpos, uint8_t chYpos, uint32_t chNum,
-		uint8_t chLen, uint8_t chSize)
-{
+		uint8_t chLen, uint8_t chSize) {
 	uint8_t i;
 	uint8_t chTemp, chShow = 0;
 
-	for (i = 0; i < chLen; i++)
-	{
+	for (i = 0; i < chLen; i++) {
 		chTemp = (chNum / pow(10, chLen - i - 1)) % 10;
-		if (chShow == 0 && i < (chLen - 1))
-		{
-			if (chTemp == 0)
-			{
+		if (chShow == 0 && i < (chLen - 1)) {
+			if (chTemp == 0) {
 				ssd1306_display_char(chXpos + (chSize / 2) * i, chYpos, ' ',
 						chSize, 1);
 				continue;
-			} else
-			{
+			} else {
 				chShow = 1;
 			}
 		}
@@ -376,16 +340,12 @@ void ssd1306_display_num(uint8_t chXpos, uint8_t chYpos, uint32_t chNum,
  * @retval  None
  **/
 void ssd1306_display_string(uint8_t chXpos, uint8_t chYpos,
-		const uint8_t *pchString, uint8_t chSize, uint8_t chMode)
-{
-	while (*pchString != '\0')
-	{
-		if (chXpos > (SSD1306_WIDTH - chSize / 2))
-		{
+		const uint8_t *pchString, uint8_t chSize, uint8_t chMode) {
+	while (*pchString != '\0') {
+		if (chXpos > (SSD1306_WIDTH - chSize / 2)) {
 			chXpos = 0;
 			chYpos += chSize;
-			if (chYpos > (SSD1306_HEIGHT - chSize))
-			{
+			if (chYpos > (SSD1306_HEIGHT - chSize)) {
 				chYpos = chXpos = 0;
 				ssd1306_clear_screen(0x00);
 			}
@@ -397,22 +357,18 @@ void ssd1306_display_string(uint8_t chXpos, uint8_t chYpos,
 	}
 }
 
-void ssd1306_draw_1616char(uint8_t chXpos, uint8_t chYpos, uint8_t chChar)
-{
+void ssd1306_draw_1616char(uint8_t chXpos, uint8_t chYpos, uint8_t chChar) {
 	uint8_t i, j;
 	uint8_t chTemp = 0, chYpos0 = chYpos, chMode = 0;
 
-	for (i = 0; i < 32; i++)
-	{
+	for (i = 0; i < 32; i++) {
 		chTemp = c_chFont1612[chChar - 0x30][i];
-		for (j = 0; j < 8; j++)
-		{
+		for (j = 0; j < 8; j++) {
 			chMode = chTemp & 0x80 ? 1 : 0;
 			ssd1306_draw_point(chXpos, chYpos, chMode);
 			chTemp <<= 1;
 			chYpos++;
-			if ((chYpos - chYpos0) == 16)
-			{
+			if ((chYpos - chYpos0) == 16) {
 				chYpos = chYpos0;
 				chXpos++;
 				break;
@@ -421,22 +377,18 @@ void ssd1306_draw_1616char(uint8_t chXpos, uint8_t chYpos, uint8_t chChar)
 	}
 }
 
-void ssd1306_draw_3216char(uint8_t chXpos, uint8_t chYpos, uint8_t chChar)
-{
+void ssd1306_draw_3216char(uint8_t chXpos, uint8_t chYpos, uint8_t chChar) {
 	uint8_t i, j;
 	uint8_t chTemp = 0, chYpos0 = chYpos, chMode = 0;
 
-	for (i = 0; i < 64; i++)
-	{
+	for (i = 0; i < 64; i++) {
 		chTemp = c_chFont3216[chChar - 0x30][i];
-		for (j = 0; j < 8; j++)
-		{
+		for (j = 0; j < 8; j++) {
 			chMode = chTemp & 0x80 ? 1 : 0;
 			ssd1306_draw_point(chXpos, chYpos, chMode);
 			chTemp <<= 1;
 			chYpos++;
-			if ((chYpos - chYpos0) == 32)
-			{
+			if ((chYpos - chYpos0) == 32) {
 				chYpos = chYpos0;
 				chXpos++;
 				break;
@@ -446,16 +398,12 @@ void ssd1306_draw_3216char(uint8_t chXpos, uint8_t chYpos, uint8_t chChar)
 }
 
 void ssd1306_draw_bitmap(uint8_t chXpos, uint8_t chYpos, const uint8_t *pchBmp,
-		uint8_t chWidth, uint8_t chHeight)
-{
+		uint8_t chWidth, uint8_t chHeight) {
 	uint16_t i, j, byteWidth = (chWidth + 7) / 8;
 
-	for (j = 0; j < chHeight; j++)
-	{
-		for (i = 0; i < chWidth; i++)
-		{
-			if (*(pchBmp + j * byteWidth + i / 8) & (128 >> (i & 7)))
-			{
+	for (j = 0; j < chHeight; j++) {
+		for (i = 0; i < chWidth; i++) {
+			if (*(pchBmp + j * byteWidth + i / 8) & (128 >> (i & 7))) {
 				ssd1306_draw_point(chXpos + i, chYpos + j, 1);
 			}
 		}
@@ -469,8 +417,7 @@ void ssd1306_draw_bitmap(uint8_t chXpos, uint8_t chYpos, const uint8_t *pchBmp,
  *
  * @retval None
  **/
-void ssd1306_init(void)
-{
+void ssd1306_init(void) {
 
 #ifdef INTERFACE_4WIRE_SPI	  
 	SSD1306_CS_SET();   //CS set
@@ -511,7 +458,8 @@ void ssd1306_init(void)
 	ssd1306_write_byte(0xDB, SSD1306_CMD);  //--set vcomh
 	ssd1306_write_byte(0x40, SSD1306_CMD);  //Set VCOM Deselect Level
 	ssd1306_write_byte(0x20, SSD1306_CMD); //-Set Page Addressing Mode (0x00/0x01/0x02)
-	ssd1306_write_byte(0x02, SSD1306_CMD);  //
+//	ssd1306_write_byte(0x02, SSD1306_CMD);  //
+	ssd1306_write_byte(0x00, SSD1306_CMD);
 	ssd1306_write_byte(0x8D, SSD1306_CMD);  //--set Charge Pump enable/disable
 	ssd1306_write_byte(0x14, SSD1306_CMD);  //--set(0x10) disable
 	ssd1306_write_byte(0xA4, SSD1306_CMD); // Disable Entire Display On (0xa4/0xa5)
@@ -522,64 +470,51 @@ void ssd1306_init(void)
 }
 
 ///moje
-void SSD1306_CS_SET()
-{
+void SSD1306_CS_SET() {
 	HAL_GPIO_WritePin(SSD1306_CS_GPIO, SSD1306_CS_PIN, GPIO_PIN_SET);
 }
-void SSD1306_CS_CLR()
-{
+void SSD1306_CS_CLR() {
 	HAL_GPIO_WritePin(SSD1306_CS_GPIO, SSD1306_CS_PIN, GPIO_PIN_RESET);
 }
 
-void SSD1306_RES_SET()
-{
+void SSD1306_RES_SET() {
 	HAL_GPIO_WritePin(SSD1306_RES_GPIO, SSD1306_RES_PIN, GPIO_PIN_SET);
 }
 
-void SSD1306_RES_CLR()
-{
+void SSD1306_RES_CLR() {
 	HAL_GPIO_WritePin(SSD1306_RES_GPIO, SSD1306_RES_PIN, GPIO_PIN_RESET);
 }
 
-void SSD1306_DC_SET()
-{
+void SSD1306_DC_SET() {
 	HAL_GPIO_WritePin(SSD1306_DC_GPIO, SSD1306_DC_PIN, GPIO_PIN_SET);
 }
-void SSD1306_DC_CLR()
-{
+void SSD1306_DC_CLR() {
 	HAL_GPIO_WritePin(SSD1306_DC_GPIO, SSD1306_DC_PIN, GPIO_PIN_RESET);
 }
 
-void SSD1306_CLK_SET()
-{
+void SSD1306_CLK_SET() {
 	HAL_GPIO_WritePin(SSD1306_CLK_GPIO, SSD1306_CLK_PIN, GPIO_PIN_SET);
 }
-void SSD1306_CLK_CLR()
-{
+void SSD1306_CLK_CLR() {
 	HAL_GPIO_WritePin(SSD1306_CLK_GPIO, SSD1306_CLK_PIN, GPIO_PIN_RESET);
 }
 
-void SSD1306_DIN_SET()
-{
+void SSD1306_DIN_SET() {
 	HAL_GPIO_WritePin(SSD1306_DIN_GPIO, SSD1306_DIN_PIN, GPIO_PIN_SET);
 }
-void SSD1306_DIN_CLR()
-{
+void SSD1306_DIN_CLR() {
 	HAL_GPIO_WritePin(SSD1306_DIN_GPIO, SSD1306_DIN_PIN, GPIO_PIN_RESET);
 }
 
-void SSD1306_WRITE_BYTE(uint8_t DATA)
-{
+void SSD1306_WRITE_BYTE(uint8_t DATA) {
 	HAL_SPI_Transmit(&hspi6, &DATA, 1, 1000);
-	HAL_SPI_Transmit_DMA()
 
 }
 /*-------------------------------END OF FILE LIBRARY-------------------------------*/
 
 /*-------------------------------USER INTERFACE-------------------------------*/
 
-void ssd1306_hello_word()
-{
+void ssd1306_hello_word() {
 	//ssd1306_draw_bitmap(30, 30, (uint8_t* )c_chBmp4016, 40, 16);
 
 	ssd1306_display_string(0, 0, (uint8_t *) "System Init OK", 14, 0);
@@ -590,10 +525,8 @@ void ssd1306_hello_word()
 	ssd1306_refresh_gram();
 	HAL_Delay(2000);
 	ssd1306_clear_screen(0x00);
-	ssd1306_draw_bitmap(0,0,(uint8_t *)troll_face114_64,114,64);
+	ssd1306_draw_bitmap(0, 0, (uint8_t *) troll_face114_64, 114, 64);
 	ssd1306_refresh_gram();
-
 }
-
 
 /*-------------------------------END USER INTERFACE-------------------------------*/

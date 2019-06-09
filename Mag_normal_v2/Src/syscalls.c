@@ -53,6 +53,7 @@
 #include <sys/time.h>
 #include <sys/times.h>
 
+#include "stm32f429xx.h"
 
 /* Variables */
 //#undef errno
@@ -104,11 +105,11 @@ __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
 	int DataIdx;
 
-	for (DataIdx = 0; DataIdx < len; DataIdx++)
-	{
-		__io_putchar(*ptr++);
-	}
-	return len;
+		for (DataIdx = 0; DataIdx < len; DataIdx++)
+		{
+			ITM_SendChar(*ptr++);
+		}
+		return len;
 }
 
 caddr_t _sbrk(int incr)

@@ -46,6 +46,11 @@ volatile uint16_t Flag_Close_RFID;
 volatile uint8_t Semaphor_CloseRFID;
 volatile uint8_t Semaphor_NoReadRFID;
 volatile uint8_t Count_NoReadRFID;
+volatile uint8_t Rotate90_flag;
+volatile uint8_t Scan_falg;
+volatile uint16_t CheckStatus_flag;
+volatile uint8_t noSendTCP;
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

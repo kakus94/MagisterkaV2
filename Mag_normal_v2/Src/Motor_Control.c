@@ -30,7 +30,7 @@ void vMotor_init(Motor_InitTypeDef* Motor_InitStruct1,
 	Motor_InitStruct1->Tim_Encoder = MotorLeft_Encoder;
 	Motor_InitStruct1->Tim_PWM = MotorLeft_PWM;
 	Motor_InitStruct1->Code = 0xFFAAFFAA;
-	Motor_InitStruct1->CCRx= &MotorLeft_PWM->CCR1;
+	Motor_InitStruct1->CCRx = &MotorLeft_PWM->CCR1;
 	Motor_InitStruct1->clear_PID = 0;
 
 	Motor_InitStruct2->Motor_GPIO_int1 = MotorRight_GPIO_pin1;
@@ -42,7 +42,7 @@ void vMotor_init(Motor_InitTypeDef* Motor_InitStruct1,
 	Motor_InitStruct2->Tim_Encoder = MotorRight_Encoder;
 	Motor_InitStruct2->Tim_PWM = MotorRight_PWM;
 	Motor_InitStruct2->Code = 0xAABBEEFF;
-	Motor_InitStruct2->CCRx= &MotorRight_PWM->CCR2;
+	Motor_InitStruct2->CCRx = &MotorRight_PWM->CCR2;
 	Motor_InitStruct2->clear_PID = 0;
 }
 
@@ -171,3 +171,4 @@ void vMotorAction_LedStrip(Motor_InitTypeDef* LeftMotor,
 		break;
 	}
 }
+
