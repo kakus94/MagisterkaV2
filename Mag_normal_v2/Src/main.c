@@ -64,11 +64,6 @@
 Stos_typeDef* STOS_CardSector;
 Stos_typeDef STOS_Read;
 
-/* Variable ADC */
-uint16_t ADC_tab[2];
-uint16_t ADC_tab_temp[2];
-uint16_t ADC_tab_finish[2];
-
 /* Variables ESP */
 uint8_t Received[100];
 bool timeouted;
@@ -130,7 +125,7 @@ volatile uint8_t FlagPID;
 volatile uint16_t Flag_read_card;
 volatile uint8_t FlagRead_LedStrip;
 volatile uint16_t FlagRX_th;
-volatile ADC_flag;
+volatile uint8_t ADC_flag;
 
 /* Variable debugging */
 volatile uint8_t watek1, watek2, watek3;
@@ -175,45 +170,56 @@ void PrepareFrame(uint8_t* data, uint8_t cmd) {
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
-int main(void) {
-	/* USER CODE BEGIN 1 */
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
 
-	/* USER CODE END 1 */
+	/* Variable used to convert internal temperature */
+	const float V25 = 0.76; // [Volts]
+	const float Avg_slope = 0.0025; //[Volts/degree]
+	const float SupplyVoltage = 3.3; // [Volts]
+	const float ADCResolution = 4095.0;
+	char clearData[120];
+	for(int i = 0 ; i < 120; i++)
+	{
+		 clearData[i] = ' ';
+	}
+  /* USER CODE END 1 */
 
-	/* MCU Configuration--------------------------------------------------------*/
-//gfm
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  /* MCU Configuration--------------------------------------------------------*/
 
-	/* USER CODE BEGIN Init */
-	Scan_falg = 0 ;
-	/* USER CODE END Init */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-	/* Configure the system clock */
-	SystemClock_Config();
+  /* USER CODE BEGIN Init */
+	Scan_falg = 1;
+  /* USER CODE END Init */
 
-	/* USER CODE BEGIN SysInit */
+  /* Configure the system clock */
+  SystemClock_Config();
 
-	/* USER CODE END SysInit */
+  /* USER CODE BEGIN SysInit */
 
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_DMA_Init();
-	MX_SPI4_Init();
-	MX_SPI5_Init();
-	MX_SPI6_Init();
-	MX_TIM2_Init();
-	MX_TIM3_Init();
-	MX_TIM8_Init();
-	MX_UART7_Init();
-	MX_GFXSIMULATOR_Init();
-	MX_ADC1_Init();
-	MX_TIM12_Init();
-	MX_SPI2_Init();
-	/* USER CODE BEGIN 2 */
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_SPI4_Init();
+  MX_SPI5_Init();
+  MX_SPI6_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_TIM8_Init();
+  MX_UART7_Init();
+  MX_GFXSIMULATOR_Init();
+  MX_ADC1_Init();
+  MX_TIM12_Init();
+  MX_SPI2_Init();
+  /* USER CODE BEGIN 2 */
 
 	/* Set cs and reset in high state */
 	HAL_GPIO_WritePin(RFID1_CS_GPIO_Port, RFID1_CS_Pin, SET);
@@ -223,17 +229,15 @@ int main(void) {
 
 	/* display initialization */
 	ssd1306_init();
-	ssd1306_clear_screen(0xFF);
-	HAL_Delay(1000);
 	ssd1306_clear_screen(0x00);
 	ssd1306_hello_word();
 
 	/* MFRC522 initialization  */
 	HAL_Delay(300);
 	MFRC552_preinit(&rfid1, &rfid2);
-	SPI_use_instance = &rfid2;
+	SPI_use_instance = &rfid2;  //	assigning an rfid instance
 	MFRC522_Init();
-	SPI_use_instance = &rfid1;
+	SPI_use_instance = &rfid1;	//	assigning an rfid instance
 	MFRC522_Init();
 
 	/* end of initialization, sound signal */
@@ -258,6 +262,7 @@ int main(void) {
 
 	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
+	//TODO: delete this and implement application value task
 	MotorPID_Left.ValueTask = 4;
 	MotorPID_Right.ValueTask = 4;
 
@@ -271,45 +276,76 @@ int main(void) {
 	FIFO_Clear(&FIFO_RX);
 	PROTOCOL_LinBuffClr(&LinearBuffer);
 
-	HAL_ADC_Start_DMA(&hadc1, ADC_tab, 2);
-	uint8_t adc_iterator = 0;
-
+	HAL_ADC_Start_DMA(&hadc1, ADC_tab, 3);
 
 	printf("sytem init\n\r");
-	noSendTCP=1;
-	/* USER CODE END 2 */
+	ssd1306_clear_screen(0x00);
+	noSendTCP = 1;
+  /* USER CODE END 2 */
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if(CheckStatus_flag > 1000){
-			CheckStatus_flag = 0;
-			uint8_t status= myESP8266_CheckStatus();
-			switch (status) {
-				case 2:
-					if(noSendTCP)
-					{
-						noSendTCP = 0;
-						myESP_8266_TCPconnect(1, "ESP8266_EMPE", "1QWERTY7", SERVER_PORT);
-					}
-					break;
-				case 3:
+//		if(CheckStatus_flag > 1000){
+//			CheckStatus_flag = 0;
+//			uint8_t status= myESP8266_CheckStatus();
+//			switch (status) {
+//				case 2:
+//					if(noSendTCP)
+//					{
+//						noSendTCP = 0;
+//						myESP_8266_TCPconnect(1, "ESP8266_EMPE", "1QWERTY7", SERVER_PORT);
+//					}
+//					break;
+//				case 3:
+//
+//					break;
+//				default:
+//					break;
+//			}
+//		}
 
-					break;
-				default:
-					break;
-			}
+//		if (popStos == 1) {
+//			STOS_Read = popItem(&STOS_CardSector);
+//		}
+
+		if (Start_charging) {
+			Home_flag = 0;
+			vMotor_Control(&MotorLeft, BreakeSoft);
+			vMotor_Control(&MotorRight, BreakeSoft);
 		}
 
-		if(popStos == 1)
-		{
+		if (Display_VT > 1000) {
+			Display_VT = 0;
+			PomiarADC = ADC_tab[1]; 	 // Pobranie zmierzonej wartosci
+			Vsense = (SupplyVoltage * PomiarADC) / ADCResolution; // Przeliczenie wartosci zmierzonej na napiecie
+			Temperature = ((Vsense - V25) / Avg_slope) + 25; // Obliczenie temperatury
+			char data[20] = { 0 };
+			char clearData[120] = {' '};
 
-			STOS_Read = popItem(&STOS_CardSector);
+			float tmpVal = ADC_tab[0] * (SupplyVoltage/ADCResolution) * 4.27;
+			int tmpInt1 = tmpVal;
+			float tmpFrac = tmpVal - tmpInt1;
+			int tmpInt2 = trunc(tmpFrac * 10);
+
+//			ssd1306_clear_screen(0x00);
+			sprintf((char*) data, "%d.%dV", tmpInt1, tmpInt2);
+			ssd1306_display_string(0, 0, (uint8_t*) (char*) clearData, 14, 1);
+			ssd1306_display_string(0, 0, (uint8_t*) (char*) data, 14, 1);
+
+			 tmpVal = Temperature;
+			 tmpInt1 = tmpVal;
+			 tmpFrac = tmpVal - tmpInt1;
+			 tmpInt2 = trunc(tmpFrac * 10);
+			sprintf((char*) data, "%d.%dC", tmpInt1, tmpInt2);
+			ssd1306_display_string(50, 0, (uint8_t*) (char*) data, 14, 1);
+			ssd1306_refresh_gram();
+
 		}
-		/* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 
-		/* USER CODE BEGIN 3 */
+    /* USER CODE BEGIN 3 */
 
 		/* Communication  */
 		status = GetDataFromFifo();
@@ -392,10 +428,10 @@ int main(void) {
 			Flag_read_card = 0;
 			if (rfid_id) {
 				SPI_use_instance = &rfid1;
-				rfid_id = 0;
+				rfid_id = RFID1;
 			} else {
 				SPI_use_instance = &rfid2;
-				rfid_id = 1;
+				rfid_id = RFID2;
 			}
 			if (MFRC522_Check(CardID) == MI_OK) {
 				OLED_refreshOn = 1;
@@ -407,15 +443,12 @@ int main(void) {
 
 				printf("[%02x-%02x-%02x-%02x] \r\n", CardID[0], CardID[1],
 						CardID[2], CardID[3]);
-//				HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, SET);
-//				HAL_Delay(500);
-//				HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, RESET);
 
 				if (rfid_id) {
 					for (int q = 0; q <= 3; q++)
 						LastCard[q] = CardID[q];
-					ssd1306_display_string(0, 30, (uint8_t*) "Karta ID : ", 14,
-							1);
+//					ssd1306_display_string(0, 30, (uint8_t*) "Karta ID : ", 14,
+//							1);
 					ssd1306_display_num(0, 45, CardID[0], 3, 14);
 					ssd1306_display_char(21, 45, '-', 14, 1);
 					ssd1306_display_num(28, 45, CardID[1], 3, 14);
@@ -423,13 +456,13 @@ int main(void) {
 					ssd1306_display_num(56, 45, CardID[2], 3, 14);
 					ssd1306_display_char(77, 45, '-', 14, 1);
 					ssd1306_display_num(84, 45, CardID[3], 3, 14);
-					pushItem(&STOS_CardSector,&LastCard,&LastSector);
+					pushItem(&STOS_CardSector, &LastCard, &LastSector);
 				} else {
 					for (int q = 0; q <= 3; q++)
 						LastSector[q] = CardID[q];
-					ssd1306_clear_screen(0x00);
-					ssd1306_display_string(0, 0, (uint8_t*) "Sektor ID : ", 14,
-							1);
+//					ssd1306_clear_screen(0x00);
+//					ssd1306_display_string(0, 0, (uint8_t*) "Sektor ID : ", 14,
+//							1);
 					ssd1306_display_num(0, 15, CardID[0], 3, 14);
 					ssd1306_display_char(21, 15, '-', 14, 1);
 					ssd1306_display_num(28, 15, CardID[1], 3, 14);
@@ -516,18 +549,20 @@ int main(void) {
 		if (FlagPID >= 10) {
 			FlagPID = 0;
 			if (Rotate90_flag) {
-				uint16_t encoderCounterL = uGetCounterTim(MotorLeft.Tim_Encoder);
-				uint16_t encoderCounterR = uGetCounterTim(MotorRight.Tim_Encoder);
+				uint16_t encoderCounterL = uGetCounterTim(
+						MotorLeft.Tim_Encoder);
+				uint16_t encoderCounterR = uGetCounterTim(
+						MotorRight.Tim_Encoder);
 				if (encoderCounterL < 500) {
 					Motor_Left_impulse += encoderCounterL;
-					} else {
-						Motor_Left_impulse +=  (1000 - encoderCounterL);
-					}
+				} else {
+					Motor_Left_impulse += (1000 - encoderCounterL);
+				}
 				if (encoderCounterR < 500) {
 					Motor_Right_impulse += encoderCounterR;
-					} else {
-						Motor_Right_impulse +=(1000 - encoderCounterR);
-					}
+				} else {
+					Motor_Right_impulse += (1000 - encoderCounterR);
+				}
 			}
 			vMotorPID_Control(&MotorPID_Left, &MotorLeft);
 			vMotorPID_Control(&MotorPID_Right, &MotorRight);
@@ -545,53 +580,56 @@ int main(void) {
 		}
 	}
 
-	/* USER CODE END 3 */
+  /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void) {
-	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-	/** Configure the main internal regulator output voltage
-	 */
-	__HAL_RCC_PWR_CLK_ENABLE()
-	;
-	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-	/** Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-	RCC_OscInitStruct.PLL.PLLM = 8;
-	RCC_OscInitStruct.PLL.PLLN = 180;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct.PLL.PLLQ = 4;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Activate the Over-Drive mode
-	 */
-	if (HAL_PWREx_EnableOverDrive() != HAL_OK) {
-		Error_Handler();
-	}
-	/** Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  /** Configure the main internal regulator output voltage 
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  /** Initializes the CPU, AHB and APB busses clocks 
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 180;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Activate the Over-Drive mode 
+  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Initializes the CPU, AHB and APB busses clocks 
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
-		Error_Handler();
-	}
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
@@ -599,7 +637,8 @@ void SystemClock_Config(void) {
 //##############
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim->Instance == TIM12)
-		Flag_read_card++;
+		Display_VT++;
+	Flag_read_card++;
 	FlagPID++;
 	FlagRead_LedStrip++;
 	ADC_flag++;
@@ -616,35 +655,39 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		Semaphor_CloseRFID = 1;
 		rfid_onRead = 1;
 	}
+	if (GPIO_Pin == EXTI7_STOP_Pin) {
+		Start_charging = 1;
+	}
 }
 
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-	/* USER CODE BEGIN Error_Handler_Debug */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 
-	/* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
-{
-	/* USER CODE BEGIN 6 */
+{ 
+  /* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
 	 tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
+  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 

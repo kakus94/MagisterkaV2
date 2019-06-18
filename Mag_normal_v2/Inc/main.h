@@ -50,9 +50,20 @@ volatile uint8_t Rotate90_flag;
 volatile uint8_t Scan_falg;
 volatile uint16_t CheckStatus_flag;
 volatile uint8_t noSendTCP;
+volatile uint8_t Start_charging;
 
 volatile uint8_t popStos;
 volatile uint8_t popDisplay;
+
+
+/* Pomiar ADC i temp procesora */
+/* Variable ADC */
+uint16_t ADC_tab[2];
+volatile uint16_t Display_VT;
+uint16_t PomiarADC;
+double Temperature;
+float Vsense;
+
 
 /* USER CODE END EC */
 
@@ -89,6 +100,9 @@ void Error_Handler(void);
 #define NRF_CE_GPIO_Port GPIOD
 #define NRF_IRQ_Pin GPIO_PIN_9
 #define NRF_IRQ_GPIO_Port GPIOD
+#define EXTI7_STOP_Pin GPIO_PIN_7
+#define EXTI7_STOP_GPIO_Port GPIOG
+#define EXTI7_STOP_EXTI_IRQn EXTI9_5_IRQn
 #define EXTI8_CloseCard_Pin GPIO_PIN_8
 #define EXTI8_CloseCard_GPIO_Port GPIOG
 #define EXTI8_CloseCard_EXTI_IRQn EXTI9_5_IRQn
