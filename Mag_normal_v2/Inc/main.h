@@ -51,9 +51,19 @@ volatile uint8_t Scan_falg;
 volatile uint16_t CheckStatus_flag;
 volatile uint8_t noSendTCP;
 volatile uint8_t Start_charging;
+volatile uint8_t Charging;
+volatile uint8_t HomeCard_enable;
+
+volatile uint8_t Incident_flag;
+volatile uint8_t Semafor_BackHome;
+
 
 volatile uint8_t popStos;
 volatile uint8_t popDisplay;
+
+volatile float BatteryVoltage;
+volatile float BatteryVoltage_countMeasure;
+
 
 
 /* Pomiar ADC i temp procesora */
@@ -100,9 +110,6 @@ void Error_Handler(void);
 #define NRF_CE_GPIO_Port GPIOD
 #define NRF_IRQ_Pin GPIO_PIN_9
 #define NRF_IRQ_GPIO_Port GPIOD
-#define EXTI7_STOP_Pin GPIO_PIN_7
-#define EXTI7_STOP_GPIO_Port GPIOG
-#define EXTI7_STOP_EXTI_IRQn EXTI9_5_IRQn
 #define EXTI8_CloseCard_Pin GPIO_PIN_8
 #define EXTI8_CloseCard_GPIO_Port GPIOG
 #define EXTI8_CloseCard_EXTI_IRQn EXTI9_5_IRQn
@@ -131,7 +138,8 @@ void Error_Handler(void);
 #define LEDS_OUT5_Pin GPIO_PIN_1
 #define LEDS_OUT5_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
-
+#define TRUE 1
+#define FALSE 0
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

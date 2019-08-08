@@ -46,6 +46,8 @@ void vMotor_init(Motor_InitTypeDef* Motor_InitStruct1,
 	Motor_InitStruct2->clear_PID = 0;
 }
 
+
+
 void vMotor_Control(Motor_InitTypeDef* motor, uint8_t eBridgeControl) {
 	switch (eBridgeControl) {
 	case BreakeHard:
@@ -111,6 +113,18 @@ void vMotorPID_init(MotorPID_InitTypeDef* PID1, MotorPID_InitTypeDef* PID2) {
 	PID2->ki = KiValue2;
 	PID2->kd = KdValue2;
 	PID2->ValueTask = 90;
+}
+
+void vMotorPID_clear(MotorPID_InitTypeDef* PID1, MotorPID_InitTypeDef* PID2){
+	PID1->e_last = 0;
+	PID1->e_sum = 0;
+	PID1->e = 0;
+	PID1->ExecutionValue =0;
+
+	PID2->e_last = 0;
+	PID2->e_sum = 0;
+	PID2->e = 0;
+	PID2->ExecutionValue =0;
 }
 
 void vMotorPID_Control(MotorPID_InitTypeDef* MotorPID, Motor_InitTypeDef* Motor) {

@@ -126,6 +126,7 @@ volatile uint16_t Flag_read_card;
 volatile uint8_t FlagRead_LedStrip;
 volatile uint16_t FlagRX_th;
 volatile uint8_t ADC_flag;
+volatile uint16_t Backwards_timerStop;
 
 /* Variable debugging */
 volatile uint8_t watek1, watek2, watek3;
@@ -261,6 +262,7 @@ int main(void)
 	vMotorPID_init(&MotorPID_Left, &MotorPID_Right);
 
 	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
 	//TODO: delete this and implement application value task
 	MotorPID_Left.ValueTask = 4;
@@ -314,7 +316,36 @@ int main(void)
 			Home_flag = 0;
 			vMotor_Control(&MotorLeft, BreakeSoft);
 			vMotor_Control(&MotorRight, BreakeSoft);
+			Charging = TRUE;
+			Start_charging= FALSE;
 		}
+
+		if(Charging){
+			if(BatteryVoltage > 11.8) {
+				Charging = FALSE;
+				HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, SET);
+				Charging = FALSE;
+				vMotorPID_clear(&MotorPID_Left,&MotorPID_Right);
+				MotorPID_Left.ValueTask = 3;
+				MotorPID_Right.ValueTask = 3;
+				MotorPID_Left.e_sum = 0;
+				MotorPID_Right.e_sum = 0;
+				vMotor_Control(&MotorLeft, Back);
+				vMotor_Control(&MotorRight, Back);
+
+				Semafor_BackHome =TRUE;
+			}
+		}
+
+		if(Backwards_timerStop > 3000)
+		{
+			Backwards_timerStop = 0;
+			Semafor_BackHome = FALSE;
+			vMotor_Control(&MotorLeft, BreakeSoft);
+			vMotor_Control(&MotorRight, BreakeSoft);
+			HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, RESET);
+		}
+
 
 		if (Display_VT > 1000) {
 			Display_VT = 0;
@@ -325,7 +356,7 @@ int main(void)
 			char clearData[120] = {' '};
 
 			float tmpVal = ADC_tab[0] * (SupplyVoltage/ADCResolution) * 4.27;
-			int tmpInt1 = tmpVal;
+			int tmpInt1 = BatteryVoltage = tmpVal;
 			float tmpFrac = tmpVal - tmpInt1;
 			int tmpInt2 = trunc(tmpFrac * 10);
 
@@ -348,63 +379,63 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 		/* Communication  */
-		status = GetDataFromFifo();
-		if (HAL_OK == status) {
-			uint8_t recdata[32];
-			PROTOCOL_FrameTypeDef* pRecFrame;
-			if (NULL
-					!= strstr(((char*) LinearBuffer.p_lin_buffer),
-							"\r\n+IPD,32:")) {
-
-				uint8_t offset = sizeof("\r\n+IPD,32:") - 1;
-				memcpy(recdata, LinearBuffer.p_lin_buffer + offset,
-						strlen(LinearBuffer.p_lin_buffer));
-				pRecFrame = (PROTOCOL_FrameTypeDef*) recdata;
-			} else {
-				pRecFrame = (PROTOCOL_FrameTypeDef*) LinearBuffer.p_lin_buffer;
-			}
-
-			if (NULL
-					!= strstr(((char*) pRecFrame->raw_data),
-							"Hello STM, I'm RPI")) {
-				myESP8266_SendFrame((uint8_t*) "OK Robot", SERVER_PORT);
-			}
-			switch (pRecFrame->header.command - 0x30) {
-			case CMD_STOP:
-				myESP8266_SendFrame((uint8_t*) "CMD_STOP",
-				SERVER_PORT);
-				break;
-			case CMD_START:
-				myESP8266_SendFrame((uint8_t*) "CMD_START",
-				SERVER_PORT);
-				break;
-			case CMD_STATUS:
-				myESP8266_SendFrame((uint8_t*) "CMD_STATUS",
-				SERVER_PORT);
-				break;
-			case CMD_CONFIG:
-				myESP8266_SendFrame((uint8_t*) "CMD_CONFIG",
-				SERVER_PORT);
-				break;
-			case CMD_GET_DATA:
-				;
-				char data[32];
-				sprintf(&data, "CMD_GET_DATA%x%x%x%x%x%x%x%x%x", MyID[0],
-						MyID[1], MyID[2], MyID[3], 0xDE, 0xAD, 0xBE, 0xEF, 255);
-				myESP8266_SendFrame((uint8_t*) data, SERVER_PORT);
-				break;
-			default:
-				break;
-			}
-			HAL_Delay(20);
-			//      myESP8266_SendEnd();
-			FIFO_Clear(&FIFO_RX);
-			PROTOCOL_LinBuffClr(&LinearBuffer);
-			status = HAL_ERROR;
-		}
+//		status = GetDataFromFifo();
+//		if (HAL_OK == status) {
+//			uint8_t recdata[32];
+//			PROTOCOL_FrameTypeDef* pRecFrame;
+//			if (NULL
+//					!= strstr(((char*) LinearBuffer.p_lin_buffer),
+//							"\r\n+IPD,32:")) {
+//
+//				uint8_t offset = sizeof("\r\n+IPD,32:") - 1;
+//				memcpy(recdata, LinearBuffer.p_lin_buffer + offset,
+//						strlen(LinearBuffer.p_lin_buffer));
+//				pRecFrame = (PROTOCOL_FrameTypeDef*) recdata;
+//			} else {
+//				pRecFrame = (PROTOCOL_FrameTypeDef*) LinearBuffer.p_lin_buffer;
+//			}
+//
+//			if (NULL
+//					!= strstr(((char*) pRecFrame->raw_data),
+//							"Hello STM, I'm RPI")) {
+//				myESP8266_SendFrame((uint8_t*) "OK Robot", SERVER_PORT);
+//			}
+//			switch (pRecFrame->header.command - 0x30) {
+//			case CMD_STOP:
+//				myESP8266_SendFrame((uint8_t*) "CMD_STOP",
+//				SERVER_PORT);
+//				break;
+//			case CMD_START:
+//				myESP8266_SendFrame((uint8_t*) "CMD_START",
+//				SERVER_PORT);
+//				break;
+//			case CMD_STATUS:
+//				myESP8266_SendFrame((uint8_t*) "CMD_STATUS",
+//				SERVER_PORT);
+//				break;
+//			case CMD_CONFIG:
+//				myESP8266_SendFrame((uint8_t*) "CMD_CONFIG",
+//				SERVER_PORT);
+//				break;
+//			case CMD_GET_DATA:
+//				;
+//				char data[32];
+//				sprintf(&data, "CMD_GET_DATA%x%x%x%x%x%x%x%x%x", MyID[0],
+//						MyID[1], MyID[2], MyID[3], 0xDE, 0xAD, 0xBE, 0xEF, 255);
+//				myESP8266_SendFrame((uint8_t*) data, SERVER_PORT);
+//				break;
+//			default:
+//				break;
+//			}
+//			HAL_Delay(20);
+//			//      myESP8266_SendEnd();
+//			FIFO_Clear(&FIFO_RX);
+//			PROTOCOL_LinBuffClr(&LinearBuffer);
+//			status = HAL_ERROR;
+//		}
 
 		/* re-reading card reading support  */
-		if (Flag_Close_RFID > 5000) {
+		if (Flag_Close_RFID > 3000) {
 			//TODO poprawic powielone zmienen + nie dzialajace przerwanie ponowienia
 			if (Count_NoReadRFID > 2) {
 				rfid_onRead = 0;
@@ -472,8 +503,9 @@ int main(void)
 					ssd1306_display_num(84, 15, CardID[3], 3, 14);
 					if (Home_checkCard(&HomeCardID, &CardID)) {
 						NVIC_DisableIRQ(EXTI9_5_IRQn);
-						Scan_falg = 0;
-						Rotate90_flag = 1;
+						Scan_falg =  FALSE;
+						HomeCard_enable = TRUE;
+						Rotate90_flag = TRUE;
 						Motor_Left_impulse = 0;
 						Motor_Right_impulse = 0;
 						MotorPID_Left.e_sum = 0;
@@ -646,6 +678,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (Semaphor_CloseRFID) {
 		Flag_Close_RFID++;
 	}
+	if(Semafor_BackHome)
+	{
+		Backwards_timerStop++;
+	}
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
@@ -655,8 +691,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		Semaphor_CloseRFID = 1;
 		rfid_onRead = 1;
 	}
-	if (GPIO_Pin == EXTI7_STOP_Pin) {
-		Start_charging = 1;
+	if (GPIO_Pin == GPIO_PIN_3) {
+		if(HomeCard_enable)		Start_charging = TRUE;
+		else Incident_flag = TRUE;
 	}
 }
 

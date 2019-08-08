@@ -98,6 +98,7 @@ void vMotorAction_LedStrip(Motor_InitTypeDef* LeftMotor,
 //PID implementation
 void vMotorPID_Control(MotorPID_InitTypeDef* MotorPID, Motor_InitTypeDef* Motor);
 void vMotorPID_init(MotorPID_InitTypeDef* PID1, MotorPID_InitTypeDef* PID2);
+void vMotorPID_clear(MotorPID_InitTypeDef* PID1, MotorPID_InitTypeDef* PID2);
 //END PID
 
 #endif /* MOTOR_CONTROL_H_ */
