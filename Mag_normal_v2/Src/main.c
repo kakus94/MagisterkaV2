@@ -39,6 +39,8 @@
 #include "LED_Strip.h"
 #include "Home_Driver.h"
 #include "cardSystem.h"
+#include "OLED_GUI.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -134,6 +136,7 @@ volatile uint8_t watek1, watek2, watek3;
 /* variable OLDE */
 uint16_t OLED_refreshFlag;
 uint8_t OLED_refreshOn;
+structdef_OLED_GUI OLED_data;
 
 /* USER CODE END PV */
 
@@ -171,56 +174,47 @@ void PrepareFrame(uint8_t* data, uint8_t cmd) {
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
+	/* USER CODE BEGIN 1 */
 
 	/* Variable used to convert internal temperature */
-	const float V25 = 0.76; // [Volts]
-	const float Avg_slope = 0.0025; //[Volts/degree]
-	const float SupplyVoltage = 3.3; // [Volts]
-	const float ADCResolution = 4095.0;
-	char clearData[120];
-	for(int i = 0 ; i < 120; i++)
-	{
-		 clearData[i] = ' ';
-	}
-  /* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* USER CODE END 1 */
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* USER CODE BEGIN Init */
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+
+	/* USER CODE BEGIN Init */
 	Scan_falg = 1;
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+	/* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+	/* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_SPI4_Init();
-  MX_SPI5_Init();
-  MX_SPI6_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_TIM8_Init();
-  MX_UART7_Init();
-  MX_GFXSIMULATOR_Init();
-  MX_ADC1_Init();
-  MX_TIM12_Init();
-  MX_SPI2_Init();
-  /* USER CODE BEGIN 2 */
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_DMA_Init();
+	MX_SPI4_Init();
+	MX_SPI5_Init();
+	MX_SPI6_Init();
+	MX_TIM2_Init();
+	MX_TIM3_Init();
+	MX_TIM8_Init();
+	MX_UART7_Init();
+	MX_GFXSIMULATOR_Init();
+	MX_ADC1_Init();
+	MX_TIM12_Init();
+	MX_SPI2_Init();
+	/* USER CODE BEGIN 2 */
 
 	/* Set cs and reset in high state */
 	HAL_GPIO_WritePin(RFID1_CS_GPIO_Port, RFID1_CS_Pin, SET);
@@ -283,49 +277,26 @@ int main(void)
 	printf("sytem init\n\r");
 	ssd1306_clear_screen(0x00);
 	noSendTCP = 1;
-  /* USER CODE END 2 */
+	/* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
 	while (1) {
-
-//		if(CheckStatus_flag > 1000){
-//			CheckStatus_flag = 0;
-//			uint8_t status= myESP8266_CheckStatus();
-//			switch (status) {
-//				case 2:
-//					if(noSendTCP)
-//					{
-//						noSendTCP = 0;
-//						myESP_8266_TCPconnect(1, "ESP8266_EMPE", "1QWERTY7", SERVER_PORT);
-//					}
-//					break;
-//				case 3:
-//
-//					break;
-//				default:
-//					break;
-//			}
-//		}
-
-//		if (popStos == 1) {
-//			STOS_Read = popItem(&STOS_CardSector);
-//		}
 
 		if (Start_charging) {
 			Home_flag = 0;
 			vMotor_Control(&MotorLeft, BreakeSoft);
 			vMotor_Control(&MotorRight, BreakeSoft);
 			Charging = TRUE;
-			Start_charging= FALSE;
+			Start_charging = FALSE;
 		}
 
-		if(Charging){
-			if(BatteryVoltage > 11.8) {
+		if (Charging) {
+			if (BatteryVoltage > 11.8) {
 				Charging = FALSE;
 				HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, SET);
 				Charging = FALSE;
-				vMotorPID_clear(&MotorPID_Left,&MotorPID_Right);
+				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
 				MotorPID_Left.ValueTask = 3;
 				MotorPID_Right.ValueTask = 3;
 				MotorPID_Left.e_sum = 0;
@@ -333,12 +304,11 @@ int main(void)
 				vMotor_Control(&MotorLeft, Back);
 				vMotor_Control(&MotorRight, Back);
 
-				Semafor_BackHome =TRUE;
+				Semafor_BackHome = TRUE;
 			}
 		}
 
-		if(Backwards_timerStop > 3000)
-		{
+		if (Backwards_timerStop > 3000) {
 			Backwards_timerStop = 0;
 			Semafor_BackHome = FALSE;
 			vMotor_Control(&MotorLeft, BreakeSoft);
@@ -346,93 +316,15 @@ int main(void)
 			HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, RESET);
 		}
 
-
 		if (Display_VT > 1000) {
 			Display_VT = 0;
-			PomiarADC = ADC_tab[1]; 	 // Pobranie zmierzonej wartosci
-			Vsense = (SupplyVoltage * PomiarADC) / ADCResolution; // Przeliczenie wartosci zmierzonej na napiecie
-			Temperature = ((Vsense - V25) / Avg_slope) + 25; // Obliczenie temperatury
-			char data[20] = { 0 };
-			char clearData[120] = {' '};
-
-			float tmpVal = ADC_tab[0] * (SupplyVoltage/ADCResolution) * 4.27;
-			int tmpInt1 = BatteryVoltage = tmpVal;
-			float tmpFrac = tmpVal - tmpInt1;
-			int tmpInt2 = trunc(tmpFrac * 10);
-
-//			ssd1306_clear_screen(0x00);
-			sprintf((char*) data, "%d.%dV", tmpInt1, tmpInt2);
-			ssd1306_display_string(0, 0, (uint8_t*) (char*) clearData, 14, 1);
-			ssd1306_display_string(0, 0, (uint8_t*) (char*) data, 14, 1);
-
-			 tmpVal = Temperature;
-			 tmpInt1 = tmpVal;
-			 tmpFrac = tmpVal - tmpInt1;
-			 tmpInt2 = trunc(tmpFrac * 10);
-			sprintf((char*) data, "%d.%dC", tmpInt1, tmpInt2);
-			ssd1306_display_string(50, 0, (uint8_t*) (char*) data, 14, 1);
-			ssd1306_refresh_gram();
-
+			OLED_data.ADC_valueTemp = ADC_tab[1];
+			OLED_data.ADC_valueVoltage = ADC_tab[0];
+			OLED_GIU(&OLED_data, eDisplayVoltageAndTemp);
 		}
-    /* USER CODE END WHILE */
+		/* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-
-		/* Communication  */
-//		status = GetDataFromFifo();
-//		if (HAL_OK == status) {
-//			uint8_t recdata[32];
-//			PROTOCOL_FrameTypeDef* pRecFrame;
-//			if (NULL
-//					!= strstr(((char*) LinearBuffer.p_lin_buffer),
-//							"\r\n+IPD,32:")) {
-//
-//				uint8_t offset = sizeof("\r\n+IPD,32:") - 1;
-//				memcpy(recdata, LinearBuffer.p_lin_buffer + offset,
-//						strlen(LinearBuffer.p_lin_buffer));
-//				pRecFrame = (PROTOCOL_FrameTypeDef*) recdata;
-//			} else {
-//				pRecFrame = (PROTOCOL_FrameTypeDef*) LinearBuffer.p_lin_buffer;
-//			}
-//
-//			if (NULL
-//					!= strstr(((char*) pRecFrame->raw_data),
-//							"Hello STM, I'm RPI")) {
-//				myESP8266_SendFrame((uint8_t*) "OK Robot", SERVER_PORT);
-//			}
-//			switch (pRecFrame->header.command - 0x30) {
-//			case CMD_STOP:
-//				myESP8266_SendFrame((uint8_t*) "CMD_STOP",
-//				SERVER_PORT);
-//				break;
-//			case CMD_START:
-//				myESP8266_SendFrame((uint8_t*) "CMD_START",
-//				SERVER_PORT);
-//				break;
-//			case CMD_STATUS:
-//				myESP8266_SendFrame((uint8_t*) "CMD_STATUS",
-//				SERVER_PORT);
-//				break;
-//			case CMD_CONFIG:
-//				myESP8266_SendFrame((uint8_t*) "CMD_CONFIG",
-//				SERVER_PORT);
-//				break;
-//			case CMD_GET_DATA:
-//				;
-//				char data[32];
-//				sprintf(&data, "CMD_GET_DATA%x%x%x%x%x%x%x%x%x", MyID[0],
-//						MyID[1], MyID[2], MyID[3], 0xDE, 0xAD, 0xBE, 0xEF, 255);
-//				myESP8266_SendFrame((uint8_t*) data, SERVER_PORT);
-//				break;
-//			default:
-//				break;
-//			}
-//			HAL_Delay(20);
-//			//      myESP8266_SendEnd();
-//			FIFO_Clear(&FIFO_RX);
-//			PROTOCOL_LinBuffClr(&LinearBuffer);
-//			status = HAL_ERROR;
-//		}
+		/* USER CODE BEGIN 3 */
 
 		/* re-reading card reading support  */
 		if (Flag_Close_RFID > 3000) {
@@ -443,16 +335,16 @@ int main(void)
 				Count_NoReadRFID = 0;
 				Semaphor_NoReadRFID = 0;
 				Flag_Close_RFID = 0;
-
 			}
+
 			Flag_Close_RFID = 0;
 			Semaphor_CloseRFID = 0;
 			Semaphor_NoReadRFID = 1;
 			Count_NoReadRFID++;
-			ssd1306_clear_screen(0x00);
-			ssd1306_display_string(0, 0, (uint8_t*) "brak proba -> ", 14, 1);
-			ssd1306_display_num(100, 0, Count_NoReadRFID, 3, 14);
-			ssd1306_refresh_gram();
+//			ssd1306_clear_screen(0x00);
+//			ssd1306_display_string(0, 0, (uint8_t*) "brak proba -> ", 14, 1);
+//			ssd1306_display_num(100, 0, Count_NoReadRFID, 3, 14);
+//			ssd1306_refresh_gram();
 		}
 
 		if (Semaphor_CloseRFID && Flag_read_card > 250) { //TODO: wprowadzic enuma !!!, stworzyc funkcje switcha spi
@@ -472,48 +364,26 @@ int main(void)
 				Semaphor_NoReadRFID = 0;
 				Flag_Close_RFID = 0;
 
-				printf("[%02x-%02x-%02x-%02x] \r\n", CardID[0], CardID[1],
-						CardID[2], CardID[3]);
-
 				if (rfid_id) {
 					for (int q = 0; q <= 3; q++)
-						LastCard[q] = CardID[q];
-//					ssd1306_display_string(0, 30, (uint8_t*) "Karta ID : ", 14,
-//							1);
-					ssd1306_display_num(0, 45, CardID[0], 3, 14);
-					ssd1306_display_char(21, 45, '-', 14, 1);
-					ssd1306_display_num(28, 45, CardID[1], 3, 14);
-					ssd1306_display_char(49, 45, '-', 14, 1);
-					ssd1306_display_num(56, 45, CardID[2], 3, 14);
-					ssd1306_display_char(77, 45, '-', 14, 1);
-					ssd1306_display_num(84, 45, CardID[3], 3, 14);
+						OLED_data.LastCard[q] = CardID[q];
 					pushItem(&STOS_CardSector, &LastCard, &LastSector);
 				} else {
 					for (int q = 0; q <= 3; q++)
-						LastSector[q] = CardID[q];
-//					ssd1306_clear_screen(0x00);
-//					ssd1306_display_string(0, 0, (uint8_t*) "Sektor ID : ", 14,
-//							1);
-					ssd1306_display_num(0, 15, CardID[0], 3, 14);
-					ssd1306_display_char(21, 15, '-', 14, 1);
-					ssd1306_display_num(28, 15, CardID[1], 3, 14);
-					ssd1306_display_char(49, 15, '-', 14, 1);
-					ssd1306_display_num(56, 15, CardID[2], 3, 14);
-					ssd1306_display_char(77, 15, '-', 14, 1);
-					ssd1306_display_num(84, 15, CardID[3], 3, 14);
-					if (Home_checkCard(&HomeCardID, &CardID)) {
+						OLED_data.LastSector[q] = CardID[q];
+					if (Home_checkCard((uint8_t*) HomeCardID,
+							(uint8_t*) CardID)) {
 						NVIC_DisableIRQ(EXTI9_5_IRQn);
-						Scan_falg =  FALSE;
+						Scan_falg = FALSE;
 						HomeCard_enable = TRUE;
 						Rotate90_flag = TRUE;
 						Motor_Left_impulse = 0;
 						Motor_Right_impulse = 0;
 						MotorPID_Left.e_sum = 0;
 						MotorPID_Right.e_sum = 0;
-
 					}
 				}
-				ssd1306_refresh_gram();
+				OLED_GIU(&OLED_data, eDisplayCard);
 			} else {
 				printf("Nie wykryto karty \r\n");
 			}
@@ -612,56 +482,53 @@ int main(void)
 		}
 	}
 
-  /* USER CODE END 3 */
+	/* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
+	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-  /** Configure the main internal regulator output voltage 
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-  /** Initializes the CPU, AHB and APB busses clocks 
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 180;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Activate the Over-Drive mode 
-  */
-  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB busses clocks 
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+	/** Configure the main internal regulator output voltage
+	 */
+	__HAL_RCC_PWR_CLK_ENABLE()
+	;
+	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+	/** Initializes the CPU, AHB and APB busses clocks
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+	RCC_OscInitStruct.PLL.PLLM = 8;
+	RCC_OscInitStruct.PLL.PLLN = 180;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+	RCC_OscInitStruct.PLL.PLLQ = 4;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
+	/** Activate the Over-Drive mode
+	 */
+	if (HAL_PWREx_EnableOverDrive() != HAL_OK) {
+		Error_Handler();
+	}
+	/** Initializes the CPU, AHB and APB busses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
+		Error_Handler();
+	}
 }
 
 /* USER CODE BEGIN 4 */
@@ -678,8 +545,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (Semaphor_CloseRFID) {
 		Flag_Close_RFID++;
 	}
-	if(Semafor_BackHome)
-	{
+	if (Semafor_BackHome) {
 		Backwards_timerStop++;
 	}
 }
@@ -692,39 +558,40 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		rfid_onRead = 1;
 	}
 	if (GPIO_Pin == GPIO_PIN_3) {
-		if(HomeCard_enable)		Start_charging = TRUE;
-		else Incident_flag = TRUE;
+		if (HomeCard_enable)
+			Start_charging = TRUE;
+		else
+			Incident_flag = TRUE;
 	}
 }
 
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
+	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 
-  /* USER CODE END Error_Handler_Debug */
+	/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
-{ 
-  /* USER CODE BEGIN 6 */
+{
+	/* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
 	 tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+	/* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 
