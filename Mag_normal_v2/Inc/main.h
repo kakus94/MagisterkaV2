@@ -68,7 +68,7 @@ volatile float BatteryVoltage_countMeasure;
 
 /* Pomiar ADC i temp procesora */
 /* Variable ADC */
-uint16_t ADC_tab[2];
+uint16_t ADC_tab[3];
 volatile uint16_t Display_VT;
 uint16_t PomiarADC;
 double Temperature;

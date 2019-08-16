@@ -292,10 +292,10 @@ int main(void) {
 //	FIFO_Clear(&FIFO_RX);
 //	PROTOCOL_LinBuffClr(&LinearBuffer);
 //
-//	HAL_ADC_Start_DMA(&hadc1, ADC_tab, 3);
-//	printf("sytem init\n\r");
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t* )ADC_tab, 3);
+	printf("sytem init\n\r");
 	ssd1306_clear_screen(0x00);
-	noSendTCP = 1;
+//	noSendTCP = 1;
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -354,7 +354,7 @@ int main(void) {
 			Start_charging = FALSE;
 		}
 		if (Charging) {
-			if (BatteryVoltage > 11.8) {
+			if (BatteryVoltage > 12.4) {
 				Charging = FALSE;
 				HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, SET);
 				Charging = FALSE;
@@ -410,7 +410,7 @@ int main(void) {
 
 		if (Semaphor_CloseRFID && Flag_read_card > 250) { //TODO: wprowadzic enuma !!!, stworzyc funkcje switcha spi
 			Flag_read_card = 0;
-			if (rfid_id) {
+ 			if (rfid_id) {
 				SPI_use_instance = &rfid1;
 				rfid_id = RFID1;
 			} else {
