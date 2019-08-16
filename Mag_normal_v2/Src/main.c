@@ -318,7 +318,7 @@ int main(void) {
 			printf("\r\n");
 			nRF24_SetOperationalMode(nRF24_MODE_TX);
 			uint8_t size;
-			size = sprintf(nRF24_payloadTx, (uint8_t*) "OK -> ");
+			size = sprintf(nRF24_payloadTx, (uint8_t*) "1OK -> ");
 			sprintf(nRF24_payloadTx + size,nRF24_payloadRx);
 
 			tx_res = nRF24_TransmitPacket((uint8_t*) nRF24_payloadTx, 32,
