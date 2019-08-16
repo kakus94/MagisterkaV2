@@ -41,11 +41,13 @@
 #include "cardSystem.h"
 #include "OLED_GUI.h"
 #include <string.h>
+#include "nrf24.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 #define ITM_Port32(n) (*((volatile unsigned long *)(0xE0000000 + 4*n)))
+#define nRF24_WAIT_TIMEOUT         (uint32_t)0x000FFFFF
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -137,6 +139,13 @@ volatile uint8_t watek1, watek2, watek3;
 uint16_t OLED_refreshFlag;
 uint8_t OLED_refreshOn;
 structdef_OLED_GUI OLED_data;
+
+/* NRF variable */
+nRF24_RXResult pipe;
+uint8_t nRF24_payloadRx[32];
+uint8_t nRF24_payloadTx[32];
+uint8_t payload_length;
+nRF24_TXResult tx_res;
 
 /* USER CODE END PV */
 
@@ -240,6 +249,17 @@ int main(void) {
 	HAL_Delay(500);
 	HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, RESET);
 
+	/* NRF24 initialization */
+	nRF24_CE_H();
+	HAL_Delay(500);
+	nRF24_CE_L();
+	nRF24_Check();
+	nRF24_Init();
+	HAL_Delay(200);
+	nRF24_setConfiguration();
+	HAL_Delay(200);
+	nRF24_PrintSetting();
+
 	/* initialization of encoders and timer */
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_2);
@@ -263,18 +283,17 @@ int main(void) {
 	MotorPID_Right.ValueTask = 4;
 
 	/* Inicialization ESP */
-	HAL_NVIC_EnableIRQ(UART7_IRQn);
-	HAL_UART_Receive_IT(&huart7, Received, 1);
-	myESP_8266_InitClient(1, "ESP8266_EMPE", "1QWERTY7", SERVER_PORT);
-
-	HAL_StatusTypeDef status = HAL_ERROR;
-	HAL_UART_Receive_IT(&huart7, Received, 1);
-	FIFO_Clear(&FIFO_RX);
-	PROTOCOL_LinBuffClr(&LinearBuffer);
-
-	HAL_ADC_Start_DMA(&hadc1, ADC_tab, 3);
-
-	printf("sytem init\n\r");
+//	HAL_NVIC_EnableIRQ(UART7_IRQn);
+//	HAL_UART_Receive_IT(&huart7, Received, 1);
+//	myESP_8266_InitClient(1, "ESP8266_EMPE", "1QWERTY7", SERVER_PORT);
+//
+//	HAL_StatusTypeDef status = HAL_ERROR;
+//	HAL_UART_Receive_IT(&huart7, Received, 1);
+//	FIFO_Clear(&FIFO_RX);
+//	PROTOCOL_LinBuffClr(&LinearBuffer);
+//
+//	HAL_ADC_Start_DMA(&hadc1, ADC_tab, 3);
+//	printf("sytem init\n\r");
 	ssd1306_clear_screen(0x00);
 	noSendTCP = 1;
 	/* USER CODE END 2 */
@@ -283,6 +302,50 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
+		if (nRF24_GetStatus_RXFIFO() != nRF24_STATUS_RXFIFO_EMPTY) {
+			// Get a payload from the transceiver
+
+			pipe = nRF24_ReadPayload(nRF24_payloadRx, &payload_length);
+
+			// Clear all pending IRQ flags
+			nRF24_ClearIRQFlags();
+
+			printf("RCV PIPE%d", pipe);
+			printf(" PAYLOAD:> ");
+			for (int i = 0; i < 32; i++)
+				printf("%c",nRF24_payloadRx[i]);
+
+			printf("\r\n");
+			nRF24_SetOperationalMode(nRF24_MODE_TX);
+			uint8_t size;
+			size = sprintf(nRF24_payloadTx, (uint8_t*) "OK -> ");
+			sprintf(nRF24_payloadTx + size,nRF24_payloadRx);
+
+			tx_res = nRF24_TransmitPacket((uint8_t*) nRF24_payloadTx, 32,
+					nRF24_WAIT_TIMEOUT);
+
+			switch (tx_res) {
+			case nRF24_TX_SUCCESS:
+				printf("OK");
+				break;
+			case nRF24_TX_TIMEOUT:
+				printf("TIMEOUT");
+				break;
+			case nRF24_TX_MAXRT:
+				printf("MAX RETRANSMIT");
+				break;
+			default:
+				printf("ERROR");
+				break;
+			}
+			printf("\r\n");
+
+			nRF24_SetOperationalMode(nRF24_MODE_RX); // switch transceiver to the RX mode
+			nRF24_SetPowerMode(nRF24_PWR_UP); // wake-up transceiver (in case if it sleeping)
+			nRF24_CE_H();
+
+		}
+
 		if (Start_charging) {
 			Home_flag = 0;
 			vMotor_Control(&MotorLeft, BreakeSoft);
@@ -290,7 +353,6 @@ int main(void) {
 			Charging = TRUE;
 			Start_charging = FALSE;
 		}
-
 		if (Charging) {
 			if (BatteryVoltage > 11.8) {
 				Charging = FALSE;
@@ -303,7 +365,6 @@ int main(void) {
 				MotorPID_Right.e_sum = 0;
 				vMotor_Control(&MotorLeft, Back);
 				vMotor_Control(&MotorRight, Back);
-
 				Semafor_BackHome = TRUE;
 			}
 		}

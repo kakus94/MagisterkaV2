@@ -42,7 +42,7 @@
 <stringAttribute key="com.atollic.truestudio.swv.core.itmports_priv" value="0:0:0:0"/>
 <stringAttribute key="com.atollic.truestudio.swv.core.pc_sample" value="0:16384"/>
 <stringAttribute key="com.atollic.truestudio.swv.core.timestamps" value="1:64"/>
-<stringAttribute key="com.atollic.truestudio.swv.core.trace_events" value="Cpi=1:Exc=1:Sleep=0:Lsu=0:Fold=1:Exetrc=1"/>
+<stringAttribute key="com.atollic.truestudio.swv.core.trace_events" value="Cpi=0:Exc=0:Sleep=0:Lsu=0:Fold=0:Exetrc=0"/>
 <stringAttribute key="org.eclipse.cdt.debug.mi.core.DEBUG_NAME" value="${TOOLCHAIN_PATH}/arm-atollic-eabi-gdb"/>
 <stringAttribute key="org.eclipse.cdt.debug.mi.core.commandFactory" value="Standard (Windows)"/>
 <stringAttribute key="org.eclipse.cdt.debug.mi.core.protocol" value="mi"/>

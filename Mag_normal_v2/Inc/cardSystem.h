@@ -14,8 +14,7 @@ typedef 	struct{
 	uint8_t CardID[4];
 	uint8_t SectorID[4];
 	uint16_t Iterator;
-
-	}item;
+	}__packed item;
 
 typedef struct stos{
 	item object;

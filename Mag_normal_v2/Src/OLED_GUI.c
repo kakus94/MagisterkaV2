@@ -43,7 +43,7 @@ void OLED_GIU(structdef_OLED_GUI* OLEDdata,StatusMachine SM)
 					break;
 		case eDisplayVoltageAndTemp:
 			asm("nop");
-			float V25 = 0.76;; // [Volts]
+			float V25 = 0.76; // [Volts]
 			float Avg_slope = 0.0025; //[Volts/degree]
 			float SupplyVoltage = 3.3; // [Volts]
 			float ADCResolution = 4095.0;
