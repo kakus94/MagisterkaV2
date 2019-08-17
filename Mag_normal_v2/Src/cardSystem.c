@@ -67,10 +67,13 @@ uint8_t pushItem(Stos_typeDef** top, uint8_t* card, uint8_t* sector) {
 Stos_typeDef popItem(Stos_typeDef** top)
 {
 	Stos_typeDef *tmp;
-	Stos_typeDef result;
+	Stos_typeDef result ;
+	result.object.Iterator = 255 ;
 
 	     if (*top ==0)
-	     printf("Stos pusty\n\r");
+	     {
+			 printf("Stos pusty\n\r");
+	     }
 	     else{
 	     tmp = *top;
 	     (*top) =(*top)->previous;

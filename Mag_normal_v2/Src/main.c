@@ -42,6 +42,7 @@
 #include "OLED_GUI.h"
 #include <string.h>
 #include "nrf24.h"
+#include "Robot.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -147,6 +148,11 @@ uint8_t nRF24_payloadTx[32];
 uint8_t payload_length;
 nRF24_TXResult tx_res;
 
+/* Robot */
+Robot_Data RobotData;
+Config RobotConfig;
+Status RobotStatus;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -188,7 +194,10 @@ void PrepareFrame(uint8_t* data, uint8_t cmd) {
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-
+	RobotData.config = & RobotConfig;
+	RobotData.status = & RobotStatus;
+	RobotData.stos = &STOS_CardSector;
+	RobotData.ActionsPerformed=1;
 	/* Variable used to convert internal temperature */
 
 	/* USER CODE END 1 */
@@ -199,7 +208,7 @@ int main(void) {
 	HAL_Init();
 
 	/* USER CODE BEGIN Init */
-	Scan_falg = 1;
+	Scan_falg = 0;
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
@@ -292,7 +301,7 @@ int main(void) {
 //	FIFO_Clear(&FIFO_RX);
 //	PROTOCOL_LinBuffClr(&LinearBuffer);
 //
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t* )ADC_tab, 3);
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC_tab, 3);
 	printf("sytem init\n\r");
 	ssd1306_clear_screen(0x00);
 //	noSendTCP = 1;
@@ -302,47 +311,38 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if (nRF24_GetStatus_RXFIFO() != nRF24_STATUS_RXFIFO_EMPTY) {
-			// Get a payload from the transceiver
+		if (RobotNrfTimer > 500 ) {
+			RobotNrfTimer = 0;
+			RobotData.FirstCall = Robot_CheckBufforNrf();
+			if(RobotData.FirstCall)
+			{
+				RobotData.ActionsPerformed = 0;
+				Robot_PopBuffer(&RobotData);
+				Robot_PerformAction(&RobotData);
+				//Robot_ECHO(&RobotData);
+			}
+			if(!RobotData.ActionsPerformed)
+			{
+				Robot_ChangeTX();
+				if(Robot_SendData(&RobotData) == nRF24_TX_SUCCESS) RobotData.ActionsPerformed = 1;
+				Robot_ChangeRX();
+			}
 
-			pipe = nRF24_ReadPayload(nRF24_payloadRx, &payload_length);
 
-			// Clear all pending IRQ flags
-			nRF24_ClearIRQFlags();
-
-			printf("RCV PIPE%d", pipe);
-			printf(" PAYLOAD:> ");
-			for (int i = 0; i < 32; i++)
-				printf("%c",nRF24_payloadRx[i]);
-
-			printf("\r\n");
-			nRF24_SetOperationalMode(nRF24_MODE_TX);
-			uint8_t size;
-			size = sprintf(nRF24_payloadTx, (uint8_t*) "1OK -> ");
-			sprintf(nRF24_payloadTx + size,nRF24_payloadRx);
-
-			tx_res = nRF24_TransmitPacket((uint8_t*) nRF24_payloadTx, 32,
-					nRF24_WAIT_TIMEOUT);
-
-			switch (tx_res) {
-			case nRF24_TX_SUCCESS:
-				printf("OK");
+			switch (RobotData.config->state) {
+			case eRobotStop:
+				vMotor_Control(&MotorLeft, BreakeSoft);
+				vMotor_Control(&MotorRight, BreakeSoft);
+				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
+				Scan_falg = 0;
 				break;
-			case nRF24_TX_TIMEOUT:
-				printf("TIMEOUT");
-				break;
-			case nRF24_TX_MAXRT:
-				printf("MAX RETRANSMIT");
+			case eRobotMove:
+				Scan_falg = 1;
+				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
 				break;
 			default:
-				printf("ERROR");
 				break;
 			}
-			printf("\r\n");
-
-			nRF24_SetOperationalMode(nRF24_MODE_RX); // switch transceiver to the RX mode
-			nRF24_SetPowerMode(nRF24_PWR_UP); // wake-up transceiver (in case if it sleeping)
-			nRF24_CE_H();
 
 		}
 
@@ -397,20 +397,15 @@ int main(void) {
 				Semaphor_NoReadRFID = 0;
 				Flag_Close_RFID = 0;
 			}
-
 			Flag_Close_RFID = 0;
 			Semaphor_CloseRFID = 0;
 			Semaphor_NoReadRFID = 1;
 			Count_NoReadRFID++;
-//			ssd1306_clear_screen(0x00);
-//			ssd1306_display_string(0, 0, (uint8_t*) "brak proba -> ", 14, 1);
-//			ssd1306_display_num(100, 0, Count_NoReadRFID, 3, 14);
-//			ssd1306_refresh_gram();
 		}
 
 		if (Semaphor_CloseRFID && Flag_read_card > 250) { //TODO: wprowadzic enuma !!!, stworzyc funkcje switcha spi
 			Flag_read_card = 0;
- 			if (rfid_id) {
+			if (rfid_id) {
 				SPI_use_instance = &rfid1;
 				rfid_id = RFID1;
 			} else {
@@ -428,7 +423,7 @@ int main(void) {
 				if (rfid_id) {
 					for (int q = 0; q <= 3; q++)
 						OLED_data.LastCard[q] = CardID[q];
-					pushItem(&STOS_CardSector, &LastCard, &LastSector);
+					pushItem(&STOS_CardSector, &OLED_data.LastCard, &OLED_data.LastSector);
 				} else {
 					for (int q = 0; q <= 3; q++)
 						OLED_data.LastSector[q] = CardID[q];
@@ -603,6 +598,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	FlagRead_LedStrip++;
 	ADC_flag++;
 	CheckStatus_flag++;
+	RobotNrfTimer++;
 	if (Semaphor_CloseRFID) {
 		Flag_Close_RFID++;
 	}
