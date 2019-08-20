@@ -109,10 +109,21 @@ void Robot_PerformAction(Robot_Data* robot_data) {
 				robot_data->PayloadTX[17] =
 						robot_data->stosResult.object.Iterator;
 			} else {
-				sprintf((char*) robot_data->PayloadTX,
-						(char*) "5 stack is empty");
+				//sprintf((char*)robot_data->PayloadTX,(char*)"5 stack is empty");
+				/*mockup table*/
+				char data_in_Char[18];
+				uint8_t card_id_tab[4] = { 26, 43, 60, 77 };
+				Robot_IntToHex(result, (uint8_t*) &card_id_tab, 4);
+				memcpy(robot_data->PayloadTX + 1, &result, 8);
+				uint8_t sector_id_tab[4] = { 241, 226, 211, 196 };
+				Robot_IntToHex(result, (uint8_t*) &sector_id_tab, 4);
+				memcpy(robot_data->PayloadTX + 9, &result, 8);
+				uint16_t iterator = 170;
+				char str[15] = { 0 };
+				sprintf(str, "%d", iterator);
+				memcpy(robot_data->PayloadTX + 17, &str, 15);
+				/*end of mocup table*/
 			}
-
 		}
 		break;
 	default:
