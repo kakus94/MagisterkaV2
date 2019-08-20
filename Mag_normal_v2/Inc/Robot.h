@@ -40,6 +40,10 @@ typedef struct {
 	Card_Data* card_data;
 	Stos_typeDef** stos;
 	Stos_typeDef stosResult;
+	Motor_InitTypeDef* MotorRight;
+	Motor_InitTypeDef* MotorLeft;
+	MotorPID_InitTypeDef* MotorPID_Left;
+	MotorPID_InitTypeDef* MotorPID_Right;
 	uint8_t PayloadRx[32];
 	uint8_t PayloadTX[32];
 	uint8_t payload_length;

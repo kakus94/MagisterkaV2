@@ -13,14 +13,17 @@ uint8_t CardIdHex[8];
 uint8_t SectorIdHex[8];
 
 void Robot_IntToHex(uint8_t* result, uint8_t* data, uint8_t sizeSmallArray) {
-	uint8_t indexBigArray = sizeSmallArray * 2 ;
+	uint8_t indexBigArray = sizeSmallArray * 2 - 1;
 	uint8_t indexSamallArray = sizeSmallArray - 1;
+	uint8_t temp1, temp2;
 
 	do {
-		result[indexBigArray--] =
-				HEX_CHARS[(data[indexSamallArray] >> 4) % 0x10];
-		result[indexBigArray--] = HEX_CHARS[(data[indexSamallArray] & 0x0f)
-				% 0x10];
+		temp1 = HEX_CHARS[(data[indexSamallArray] >> 4) % 0x10];
+		temp2 = HEX_CHARS[(data[indexSamallArray] & 0x0f) % 0x10];
+
+		result[indexBigArray--] = temp2;
+		result[indexBigArray--] = temp1;
+
 	} while (indexSamallArray--);
 }
 
@@ -97,19 +100,18 @@ void Robot_PerformAction(Robot_Data* robot_data) {
 		if (robot_data->FirstCall) {
 			robot_data->FirstCall = 0;
 			robot_data->stosResult = popItem(robot_data->stos);
-			if(robot_data->stosResult.object.Iterator != 255)
-			{
+			if (robot_data->stosResult.object.Iterator != 255) {
 				Robot_IntToHex(result, robot_data->stosResult.object.CardID, 4);
-				memcpy(robot_data->PayloadTX + 1, &result, 8);
-				Robot_IntToHex(result, robot_data->stosResult.object.SectorID, 4);
+ 				memcpy(robot_data->PayloadTX + 1, &result, 8);
+				Robot_IntToHex(result, robot_data->stosResult.object.SectorID,
+						4);
 				memcpy(robot_data->PayloadTX + 9, &result, 8);
-				robot_data->PayloadTX[17] = robot_data->stosResult.object.Iterator;
+				robot_data->PayloadTX[17] =
+						robot_data->stosResult.object.Iterator;
+			} else {
+				sprintf((char*) robot_data->PayloadTX,
+						(char*) "5 stack is empty");
 			}
-			else
-			{
-				sprintf((char*)robot_data->PayloadTX,(char*)"5 stack is empty");
-			}
-
 
 		}
 		break;

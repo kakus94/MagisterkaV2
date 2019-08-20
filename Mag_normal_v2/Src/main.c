@@ -198,6 +198,10 @@ int main(void) {
 	RobotData.status = & RobotStatus;
 	RobotData.stos = &STOS_CardSector;
 	RobotData.ActionsPerformed=1;
+
+	RobotData.MotorLeft = &MotorLeft;
+	RobotData.MotorRight = &MotorRight;
+	RobotData.MotorPID_Left = &MotorPID_Left;
 	/* Variable used to convert internal temperature */
 
 	/* USER CODE END 1 */
@@ -319,7 +323,6 @@ int main(void) {
 				RobotData.ActionsPerformed = 0;
 				Robot_PopBuffer(&RobotData);
 				Robot_PerformAction(&RobotData);
-				//Robot_ECHO(&RobotData);
 			}
 			if(!RobotData.ActionsPerformed)
 			{
@@ -420,7 +423,7 @@ int main(void) {
 				Semaphor_NoReadRFID = 0;
 				Flag_Close_RFID = 0;
 
-				if (rfid_id) {
+				if (!rfid_id) {
 					for (int q = 0; q <= 3; q++)
 						OLED_data.LastCard[q] = CardID[q];
 					pushItem(&STOS_CardSector, &OLED_data.LastCard, &OLED_data.LastSector);
