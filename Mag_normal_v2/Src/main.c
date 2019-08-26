@@ -149,9 +149,10 @@ uint8_t payload_length;
 nRF24_TXResult tx_res;
 
 /* Robot */
-Robot_Data RobotData;
-Config RobotConfig;
-Status RobotStatus;
+RobotData_InitTypeDef RobotData;
+Config_InitTypeDef RobotConfig;
+Status_InitTypeDef RobotStatus;
+Movment_InitTypeDef movment;
 
 /* USER CODE END PV */
 
@@ -197,11 +198,16 @@ int main(void) {
 	RobotData.config = & RobotConfig;
 	RobotData.status = & RobotStatus;
 	RobotData.stos = &STOS_CardSector;
-	RobotData.ActionsPerformed=1;
+	RobotData.actionsPerformed=1;
 
-	RobotData.MotorLeft = &MotorLeft;
-	RobotData.MotorRight = &MotorRight;
-	RobotData.MotorPID_Left = &MotorPID_Left;
+	movment.motorLeft = &MotorLeft;
+	movment.motorRight = &MotorRight;
+	movment.motorPID_Left = &MotorPID_Left;
+	movment.motorPID_Right = &MotorPID_Right;
+
+	RobotData.movment = &movment;
+
+
 	/* Variable used to convert internal temperature */
 
 	/* USER CODE END 1 */
@@ -295,57 +301,46 @@ int main(void) {
 	MotorPID_Left.ValueTask = 4;
 	MotorPID_Right.ValueTask = 4;
 
-	/* Inicialization ESP */
-//	HAL_NVIC_EnableIRQ(UART7_IRQn);
-//	HAL_UART_Receive_IT(&huart7, Received, 1);
-//	myESP_8266_InitClient(1, "ESP8266_EMPE", "1QWERTY7", SERVER_PORT);
-//
-//	HAL_StatusTypeDef status = HAL_ERROR;
-//	HAL_UART_Receive_IT(&huart7, Received, 1);
-//	FIFO_Clear(&FIFO_RX);
-//	PROTOCOL_LinBuffClr(&LinearBuffer);
-//
+
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC_tab, 3);
 	printf("sytem init\n\r");
 	ssd1306_clear_screen(0x00);
-//	noSendTCP = 1;
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-
 		if (RobotNrfTimer > 500 ) {
 			RobotNrfTimer = 0;
-			RobotData.FirstCall = Robot_CheckBufforNrf();
-			if(RobotData.FirstCall)
+			RobotData.firstCall = Robot_CheckBufforNrf(); //check buffor
+			if(RobotData.firstCall)                       // firstly call function
 			{
-				RobotData.ActionsPerformed = 0;
-				Robot_PopBuffer(&RobotData);
-				Robot_PerformAction(&RobotData);
+				RobotData.actionsPerformed = 0;	// reset action performed
+				Robot_PopBuffer(&RobotData);    // get data for buffer
+				Robot_PerformAction(&RobotData);// this function is responsible for controlling the robot after receiving the data
 			}
-			if(!RobotData.ActionsPerformed)
+			if(!RobotData.actionsPerformed) // whether sending was successful
 			{
 				Robot_ChangeTX();
-				if(Robot_SendData(&RobotData) == nRF24_TX_SUCCESS) RobotData.ActionsPerformed = 1;
+				if(Robot_SendData(&RobotData) == nRF24_TX_SUCCESS) RobotData.actionsPerformed = 1; //success
 				Robot_ChangeRX();
 			}
 
-
-			switch (RobotData.config->state) {
-			case eRobotStop:
-				vMotor_Control(&MotorLeft, BreakeSoft);
-				vMotor_Control(&MotorRight, BreakeSoft);
-				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
-				Scan_falg = 0;
-				break;
-			case eRobotMove:
-				Scan_falg = 1;
-				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
-				break;
-			default:
-				break;
-			}
+//			switch (RobotData.config->state) {
+//			case eRobotStop:
+//				vMotor_Control(&MotorLeft, BreakeSoft);
+//				vMotor_Control(&MotorRight, BreakeSoft);
+//				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
+//				Scan_falg = 0;
+//				break;
+//			case eRobotMove:
+//				Scan_falg = 1;
+//				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
+//				break;
+//			default:
+//				break;
+//			}
 
 		}
 
@@ -406,7 +401,7 @@ int main(void) {
 			Count_NoReadRFID++;
 		}
 
-		if (Semaphor_CloseRFID && Flag_read_card > 250) { //TODO: wprowadzic enuma !!!, stworzyc funkcje switcha spi
+		if (Semaphor_CloseRFID && Flag_read_card > 250) {
 			Flag_read_card = 0;
 			if (rfid_id) {
 				SPI_use_instance = &rfid1;

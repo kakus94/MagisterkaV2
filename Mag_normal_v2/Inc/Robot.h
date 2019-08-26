@@ -18,51 +18,55 @@
 
 #define nRF24_WAIT_TIMEOUT         (uint32_t)0x000FFFFF
 
-uint16_t RobotNrfTimer;
+uint16_t RobotNrfTimer; //timer frequency check NRF
 
 typedef struct {
 
-} Status;
+} Status_InitTypeDef;
 
 typedef struct {
 	uint8_t state;
-} Config;
+} Config_InitTypeDef;
 
 typedef struct {
-	uint8_t Id_card[4];
-	uint8_t Id_sector[4];
+	uint8_t id_card[4];
+	uint8_t id_sector[4];
 	uint8_t iterator;
-} Card_Data;
+} CardData_InitTypeDef;
+
+typedef struct{
+	Motor_InitTypeDef* motorRight;
+	Motor_InitTypeDef* motorLeft;
+	MotorPID_InitTypeDef* motorPID_Left;
+	MotorPID_InitTypeDef* motorPID_Right;
+}Movment_InitTypeDef;
 
 typedef struct {
-	Status* status;
-	Config* config;
-	Card_Data* card_data;
+	Status_InitTypeDef* status;
+	Config_InitTypeDef* config;
+	CardData_InitTypeDef* card_data;
+	Movment_InitTypeDef* movment;
 	Stos_typeDef** stos;
 	Stos_typeDef stosResult;
-	Motor_InitTypeDef* MotorRight;
-	Motor_InitTypeDef* MotorLeft;
-	MotorPID_InitTypeDef* MotorPID_Left;
-	MotorPID_InitTypeDef* MotorPID_Right;
-	uint8_t PayloadRx[32];
-	uint8_t PayloadTX[32];
+	uint8_t payloadRx[32];
+	uint8_t payloadTX[32];
 	uint8_t payload_length;
 	nRF24_RXResult pipe;
 	nRF24_TXResult tx_res;
-	uint8_t FirstCall;
-	uint8_t ActionsPerformed;
+	uint8_t firstCall;
+	uint8_t actionsPerformed;
 	uint8_t stackIsEmpty;
-} Robot_Data;
+} RobotData_InitTypeDef;
 
 typedef enum{
 	eRobotStop,eRobotMove
 }enumRobot;
 
 uint8_t Robot_CheckBufforNrf();
-uint8_t Robot_PopBuffer(Robot_Data*);
-uint8_t Robot_SendData(Robot_Data*);
-void Robot_PerformAction(Robot_Data*);
-void Robot_ECHO(Robot_Data* robot_data);
+uint8_t Robot_PopBuffer(RobotData_InitTypeDef*);
+uint8_t Robot_SendData(RobotData_InitTypeDef*);
+void Robot_PerformAction(RobotData_InitTypeDef*);
+void Robot_ECHO(RobotData_InitTypeDef* robot_data);
 void Robot_ChangeTX();
 void Robot_ChangeRX();
 

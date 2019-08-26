@@ -34,22 +34,22 @@ uint8_t Robot_CheckBufforNrf() {
 		return 0;
 }
 
-uint8_t Robot_PopBuffer(Robot_Data* robot_data) {
-	robot_data->pipe = nRF24_ReadPayload(robot_data->PayloadRx,
+uint8_t Robot_PopBuffer(RobotData_InitTypeDef* robot_data) {
+	robot_data->pipe = nRF24_ReadPayload(robot_data->payloadRx,
 			&robot_data->payload_length);
 	nRF24_ClearIRQFlags();
 	printf("RCV PIPE%d", robot_data->pipe);
 	printf(" PAYLOAD:> ");
 	for (int i = 0; i < 32; i++)
-		printf("%c", robot_data->PayloadRx[i]);
+		printf("%c", robot_data->payloadRx[i]);
 
 	printf("\r\n");
 	return 1;
 }
 
-uint8_t Robot_SendData(Robot_Data* robot_data) {
+uint8_t Robot_SendData(RobotData_InitTypeDef* robot_data) {
 	nRF24_SetOperationalMode(nRF24_MODE_TX);
-	robot_data->tx_res = nRF24_TransmitPacket(robot_data->PayloadTX, 32,
+	robot_data->tx_res = nRF24_TransmitPacket(robot_data->payloadTX, 32,
 	nRF24_WAIT_TIMEOUT);
 	switch (robot_data->tx_res) {
 	case nRF24_TX_SUCCESS:
@@ -69,25 +69,33 @@ uint8_t Robot_SendData(Robot_Data* robot_data) {
 	return robot_data->tx_res;
 }
 
-void Robot_ECHO(Robot_Data* robot_data) {
-	memset(&robot_data->PayloadTX, 0, 32);
-	uint8_t switchCase = robot_data->PayloadRx[0];
-	robot_data->PayloadTX[0] = switchCase;
-	sprintf(robot_data->PayloadTX + 1, (uint8_t*) " OK ");
+void Robot_ECHO(RobotData_InitTypeDef* robot_data) {
+	memset(&robot_data->payloadTX, 0, 32);
+	uint8_t switchCase = robot_data->payloadRx[0];
+	robot_data->payloadTX[0] = switchCase;
+	sprintf(robot_data->payloadTX + 1, (uint8_t*) " OK ");
 }
 
-void Robot_PerformAction(Robot_Data* robot_data) {
+void Robot_PerformAction(RobotData_InitTypeDef* robot_data) {
 
 	uint8_t result[8];
-	memset(&robot_data->PayloadTX, 0, 32);
-	uint8_t switchCase = robot_data->PayloadRx[0];
-	robot_data->PayloadTX[0] = switchCase;
+	memset(&robot_data->payloadTX, 0, 32);
+	uint8_t switchCase = robot_data->payloadRx[0];
+	robot_data->payloadTX[0] = switchCase;
 
 	switch (switchCase - 0x30) {
 	case CMD_STOP:
 		robot_data->config->state = eRobotStop;
-		break;
+		vMotor_Control(robot_data->movment->motorLeft, BreakeSoft);
+		vMotor_Control(robot_data->movment->motorRight, BreakeSoft);
+		vMotorPID_clear(robot_data->movment->motorPID_Left,
+				robot_data->movment->motorPID_Right);
+		Scan_falg = 0;
+		robot_data->config->state = eRobotStop;
 	case CMD_START:
+		Scan_falg = 1;
+		vMotorPID_clear(robot_data->movment->motorPID_Left,
+				robot_data->movment->motorPID_Right);
 		robot_data->config->state = eRobotMove;
 		break;
 	case CMD_STATUS:
@@ -97,19 +105,19 @@ void Robot_PerformAction(Robot_Data* robot_data) {
 
 		break;
 	case CMD_GET_DATA:
-		if (robot_data->FirstCall) {
-			robot_data->FirstCall = 0;
+		if (robot_data->firstCall) {
+			robot_data->firstCall = 0;
 			robot_data->stosResult = popItem(robot_data->stos);
 			if (robot_data->stosResult.object.Iterator != 255) {
 				Robot_IntToHex(result, robot_data->stosResult.object.CardID, 4);
- 				memcpy(robot_data->PayloadTX + 1, &result, 8);
+				memcpy(robot_data->payloadTX + 1, &result, 8);
 				Robot_IntToHex(result, robot_data->stosResult.object.SectorID,
 						4);
-				memcpy(robot_data->PayloadTX + 9, &result, 8);
-				robot_data->PayloadTX[17] =
+				memcpy(robot_data->payloadTX + 9, &result, 8);
+				robot_data->payloadTX[17] =
 						robot_data->stosResult.object.Iterator;
 			} else {
-				sprintf((char*) robot_data->PayloadTX,
+				sprintf((char*) robot_data->payloadTX,
 						(char*) "5 stack is empty");
 			}
 
