@@ -21,10 +21,22 @@
 uint16_t RobotNrfTimer; //timer frequency check NRF
 
 typedef struct {
-
+	float battery;
+	float temperature;
+	float batteryStart;
+	uint8_t cardID[4];
+	uint8_t timeToStart[3];
 } Status_InitTypeDef;
 
 typedef struct {
+	float pdKp;
+	float pdKi;
+	float pdKd;
+	float alarmVoltage;
+	float CompliteCharge;
+	uint8_t speedOperation;
+	uint8_t speedHome;
+	uint8_t robotName[32];
 	uint8_t state;
 } Config_InitTypeDef;
 
@@ -69,6 +81,7 @@ void Robot_PerformAction(RobotData_InitTypeDef*);
 void Robot_ECHO(RobotData_InitTypeDef* robot_data);
 void Robot_ChangeTX();
 void Robot_ChangeRX();
+void RobotInit();
 
 void Robot_IntToHex(uint8_t* result,uint8_t* data,uint8_t sizeSmallArray);
 

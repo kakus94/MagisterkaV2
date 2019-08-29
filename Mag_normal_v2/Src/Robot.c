@@ -8,9 +8,23 @@
 #include "Robot.h"
 
 uint8_t HEX_CHARS[] = "0123456789ABCDEF";
+uint8_t NameRobot[] = "R2D2";
 
 uint8_t CardIdHex[8];
 uint8_t SectorIdHex[8];
+
+void RobotInit(Config_InitTypeDef* RobotConfig) {
+	RobotConfig->CompliteCharge = 12.2;
+	RobotConfig->alarmVoltage = 10.0;
+	RobotConfig->pdKd = 2.0;
+	RobotConfig->pdKi = 2.0;
+	RobotConfig->pdKp = 2.0;
+	RobotConfig->speedHome = 3;
+
+	RobotConfig->speedOperation = 4;
+	RobotConfig->state = eRobotStop;
+	memcpy(&RobotConfig->robotName, &NameRobot, 4);
+}
 
 void Robot_IntToHex(uint8_t* result, uint8_t* data, uint8_t sizeSmallArray) {
 	uint8_t indexBigArray = sizeSmallArray * 2 - 1;

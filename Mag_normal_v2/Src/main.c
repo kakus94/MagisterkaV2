@@ -207,7 +207,7 @@ int main(void) {
 
 	RobotData.movment = &movment;
 
-
+	RobotInit();
 	/* Variable used to convert internal temperature */
 
 	/* USER CODE END 1 */
