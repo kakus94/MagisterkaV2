@@ -36,7 +36,7 @@ typedef struct {
 	float CompliteCharge;
 	uint8_t speedOperation;
 	uint8_t speedHome;
-	uint8_t robotName[32];
+	uint8_t robotName[9];
 	uint8_t state;
 } Config_InitTypeDef;
 
@@ -81,7 +81,7 @@ void Robot_PerformAction(RobotData_InitTypeDef*);
 void Robot_ECHO(RobotData_InitTypeDef* robot_data);
 void Robot_ChangeTX();
 void Robot_ChangeRX();
-void RobotInit();
+void RobotInit(Config_InitTypeDef* RobotConfig);
 
 void Robot_IntToHex(uint8_t* result,uint8_t* data,uint8_t sizeSmallArray);
 

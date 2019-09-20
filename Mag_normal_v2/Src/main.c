@@ -99,6 +99,7 @@ PROTOCOL_LinearBuffer_ApiTypeDef TagDataStuct = { TagData, 0,
 FIFO_BUF_SIZE };
 
 /* Private variable to RFID */
+uint16_t CardIterator = 0;
 unsigned char CardID[4];
 unsigned char MyID[4] = { 0x6A, 0x08, 0xE7, 0xAB }; //My card on my keys
 uint8_t HomeCardID[4] = { 102, 7, 171, 20 };
@@ -182,6 +183,11 @@ void PrepareFrame(uint8_t* data, uint8_t cmd) {
 	memcpy(p_frame.resp_payload.get_data_payload.tags_data, data, size);
 }
 
+uint8_t UART_SendChar(uint8_t* ch)
+{
+	HAL_UART_Transmit(&huart7,ch,1,10);
+}
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -190,11 +196,12 @@ void PrepareFrame(uint8_t* data, uint8_t cmd) {
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
-int main(void) {
-	/* USER CODE BEGIN 1 */
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
 	RobotData.config = & RobotConfig;
 	RobotData.status = & RobotStatus;
 	RobotData.stos = &STOS_CardSector;
@@ -207,42 +214,42 @@ int main(void) {
 
 	RobotData.movment = &movment;
 
-	RobotInit();
+	RobotInit((Config_InitTypeDef*)RobotData.config);
 	/* Variable used to convert internal temperature */
 
-	/* USER CODE END 1 */
+  /* USER CODE END 1 */
 
-	/* MCU Configuration--------------------------------------------------------*/
+  /* MCU Configuration--------------------------------------------------------*/
 
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-	/* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
 	Scan_falg = 0;
-	/* USER CODE END Init */
+  /* USER CODE END Init */
 
-	/* Configure the system clock */
-	SystemClock_Config();
+  /* Configure the system clock */
+  SystemClock_Config();
 
-	/* USER CODE BEGIN SysInit */
+  /* USER CODE BEGIN SysInit */
 
-	/* USER CODE END SysInit */
+  /* USER CODE END SysInit */
 
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_DMA_Init();
-	MX_SPI4_Init();
-	MX_SPI5_Init();
-	MX_SPI6_Init();
-	MX_TIM2_Init();
-	MX_TIM3_Init();
-	MX_TIM8_Init();
-	MX_UART7_Init();
-	MX_GFXSIMULATOR_Init();
-	MX_ADC1_Init();
-	MX_TIM12_Init();
-	MX_SPI2_Init();
-	/* USER CODE BEGIN 2 */
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_SPI4_Init();
+  MX_SPI5_Init();
+  MX_SPI6_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_TIM8_Init();
+  MX_UART7_Init();
+  MX_GFXSIMULATOR_Init();
+  MX_ADC1_Init();
+  MX_TIM12_Init();
+  MX_SPI2_Init();
+  /* USER CODE BEGIN 2 */
 
 	/* Set cs and reset in high state */
 	HAL_GPIO_WritePin(RFID1_CS_GPIO_Port, RFID1_CS_Pin, SET);
@@ -296,55 +303,47 @@ int main(void) {
 
 	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+	HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
-	//TODO: delete this and implement application value task
-	MotorPID_Left.ValueTask = 4;
-	MotorPID_Right.ValueTask = 4;
+//	//TODO: delete this and implement application value task
+//	MotorPID_Left.ValueTask = 4;
+//	MotorPID_Right.ValueTask = 4;
 
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC_tab, 3);
 	printf("sytem init\n\r");
 	ssd1306_clear_screen(0x00);
 
-	/* USER CODE END 2 */
+  /* USER CODE END 2 */
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 	while (1) {
-		if (RobotNrfTimer > 500 ) {
+		if (RobotNrfTimer > 2000 ) {
 			RobotNrfTimer = 0;
 			RobotData.firstCall = Robot_CheckBufforNrf(); //check buffor
 			if(RobotData.firstCall)                       // firstly call function
 			{
+				printf("FirstCall\n\r");
 				RobotData.actionsPerformed = 0;	// reset action performed
 				Robot_PopBuffer(&RobotData);    // get data for buffer
 				Robot_PerformAction(&RobotData);// this function is responsible for controlling the robot after receiving the data
 			}
 			if(!RobotData.actionsPerformed) // whether sending was successful
 			{
+				printf("TX -> ");
 				Robot_ChangeTX();
-				if(Robot_SendData(&RobotData) == nRF24_TX_SUCCESS) RobotData.actionsPerformed = 1; //success
+				if(Robot_SendData(&RobotData) == nRF24_TX_SUCCESS)
+					{
+						printf("success TX\n\r");
+						RobotData.actionsPerformed = 1; //success
+					}
 				Robot_ChangeRX();
 			}
-
-//			switch (RobotData.config->state) {
-//			case eRobotStop:
-//				vMotor_Control(&MotorLeft, BreakeSoft);
-//				vMotor_Control(&MotorRight, BreakeSoft);
-//				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
-//				Scan_falg = 0;
-//				break;
-//			case eRobotMove:
-//				Scan_falg = 1;
-//				vMotorPID_clear(&MotorPID_Left, &MotorPID_Right);
-//				break;
-//			default:
-//				break;
-//			}
-
 		}
 
 		if (Start_charging) {
+			printf("Start Charging\n\r");
 			Home_flag = 0;
 			vMotor_Control(&MotorLeft, BreakeSoft);
 			vMotor_Control(&MotorRight, BreakeSoft);
@@ -353,6 +352,7 @@ int main(void) {
 		}
 		if (Charging) {
 			if (BatteryVoltage > 12.4) {
+				printf("Stop Charging\n\r");
 				Charging = FALSE;
 				HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, SET);
 				Charging = FALSE;
@@ -381,9 +381,9 @@ int main(void) {
 			OLED_data.ADC_valueVoltage = ADC_tab[0];
 			OLED_GIU(&OLED_data, eDisplayVoltageAndTemp);
 		}
-		/* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 
-		/* USER CODE BEGIN 3 */
+    /* USER CODE BEGIN 3 */
 
 		/* re-reading card reading support  */
 		if (Flag_Close_RFID > 3000) {
@@ -421,10 +421,13 @@ int main(void) {
 				if (!rfid_id) {
 					for (int q = 0; q <= 3; q++)
 						OLED_data.LastCard[q] = CardID[q];
-					pushItem(&STOS_CardSector, &OLED_data.LastCard, &OLED_data.LastSector);
+					pushItem(&STOS_CardSector, &OLED_data.LastCard, &OLED_data.LastSector,CardIterator);
+					CardIterator++;
+
 				} else {
 					for (int q = 0; q <= 3; q++)
 						OLED_data.LastSector[q] = CardID[q];
+						CardIterator = 1;
 					if (Home_checkCard((uint8_t*) HomeCardID,
 							(uint8_t*) CardID)) {
 						NVIC_DisableIRQ(EXTI9_5_IRQn);
@@ -536,53 +539,56 @@ int main(void) {
 		}
 	}
 
-	/* USER CODE END 3 */
+  /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void) {
-	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-	/** Configure the main internal regulator output voltage
-	 */
-	__HAL_RCC_PWR_CLK_ENABLE()
-	;
-	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-	/** Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-	RCC_OscInitStruct.PLL.PLLM = 8;
-	RCC_OscInitStruct.PLL.PLLN = 180;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct.PLL.PLLQ = 4;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Activate the Over-Drive mode
-	 */
-	if (HAL_PWREx_EnableOverDrive() != HAL_OK) {
-		Error_Handler();
-	}
-	/** Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  /** Configure the main internal regulator output voltage 
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  /** Initializes the CPU, AHB and APB busses clocks 
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 180;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Activate the Over-Drive mode 
+  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Initializes the CPU, AHB and APB busses clocks 
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
-		Error_Handler();
-	}
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
@@ -612,7 +618,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		Semaphor_CloseRFID = 1;
 		rfid_onRead = 1;
 	}
-	if (GPIO_Pin == GPIO_PIN_3) {
+	if (GPIO_Pin == GPIO_PIN_3 || GPIO_Pin == GPIO_PIN_4) {
+		printf("zderzak\n\r"); //TODO: do usuniecia
 		if (HomeCard_enable)
 			Start_charging = TRUE;
 		else
@@ -623,30 +630,31 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-	/* USER CODE BEGIN Error_Handler_Debug */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 
-	/* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
-{
-	/* USER CODE BEGIN 6 */
+{ 
+  /* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
 	 tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
+  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 

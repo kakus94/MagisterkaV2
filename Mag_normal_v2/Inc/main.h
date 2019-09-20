@@ -32,7 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdlib.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -79,7 +79,7 @@ float Vsense;
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+uint8_t UART_SendChar(uint8_t* ch);
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

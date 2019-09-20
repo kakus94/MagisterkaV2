@@ -24,7 +24,7 @@ typedef struct stos{
 
 
 void itemAdd(Stos_typeDef* box,uint8_t* card,uint8_t* sector);
-uint8_t pushItem(Stos_typeDef** item,uint8_t* card,uint8_t* sector);
+uint8_t pushItem(Stos_typeDef** item,uint8_t* card,uint8_t* sector,uint16_t iterator);
 Stos_typeDef popItem(Stos_typeDef** object);
 
 #endif /* CARDSYSTEM_H_ */

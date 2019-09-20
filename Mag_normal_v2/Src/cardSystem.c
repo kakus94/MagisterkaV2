@@ -35,23 +35,26 @@ void itemAdd(Stos_typeDef* box, uint8_t* card, uint8_t* sector) {
 //	}
 }
 
-uint8_t pushItem(Stos_typeDef** top, uint8_t* card, uint8_t* sector) {
+uint8_t pushItem(Stos_typeDef** top, uint8_t* card, uint8_t* sector,uint16_t iterator) {
 	uint8_t counter =0 ;
 	Stos_typeDef *nowy;
 	    nowy = (Stos_typeDef *)malloc(sizeof(Stos_typeDef));
 //	    nowy->key = liczba;
 	    memcpy(nowy->object.CardID,card,4);
 	    memcpy(nowy->object.SectorID,sector,4);
-	    for (int i = 0; i <= 3; i++)
-	    			if ((*top)->object.SectorID[i] == sector[i])
-	    				counter++;
-	    			else break;
-	    if(counter == 4)
-	    {
-	    	  nowy->object.Iterator = (*top)->object.Iterator + 1;
-	    }else{
-	    	nowy->object.Iterator = 1;
-	    }
+	    nowy->object.Iterator = iterator ;
+
+//	    for (int i = 0; i <= 3; i++)
+//	   	    			if (LastSector[i] == sector[i])
+//	   	    				counter++;
+//	   	    			else break;
+//	    if(counter == 4)
+//	    {
+////	    	  nowy->object.Iterator = (*top)->object.Iterator + 1;
+//	    	nowy->object.Iterator = iterator ;
+//	    }else{
+//	    	nowy->object.Iterator = 1;
+//	    }
 
 
 	    nowy->previous=0;

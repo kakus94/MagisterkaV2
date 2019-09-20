@@ -54,6 +54,7 @@
 #include <sys/times.h>
 
 #include "stm32f429xx.h"
+#include "main.h"
 
 /* Variables */
 //#undef errno
@@ -107,7 +108,9 @@ __attribute__((weak)) int _write(int file, char *ptr, int len)
 
 		for (DataIdx = 0; DataIdx < len; DataIdx++)
 		{
-			ITM_SendChar(*ptr++);
+			ITM_SendChar(*ptr);
+			UART_SendChar(ptr);
+			*ptr++;
 		}
 		return len;
 }

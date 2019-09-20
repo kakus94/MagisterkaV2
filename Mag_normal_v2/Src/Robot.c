@@ -16,11 +16,10 @@ uint8_t SectorIdHex[8];
 void RobotInit(Config_InitTypeDef* RobotConfig) {
 	RobotConfig->CompliteCharge = 12.2;
 	RobotConfig->alarmVoltage = 10.0;
-	RobotConfig->pdKd = 2.0;
-	RobotConfig->pdKi = 2.0;
-	RobotConfig->pdKp = 2.0;
+	RobotConfig->pdKd = 0.5;
+	RobotConfig->pdKi = -0.03;
+	RobotConfig->pdKp = 3.0;
 	RobotConfig->speedHome = 3;
-
 	RobotConfig->speedOperation = 4;
 	RobotConfig->state = eRobotStop;
 	memcpy(&RobotConfig->robotName, &NameRobot, 4);
@@ -96,9 +95,9 @@ void Robot_PerformAction(RobotData_InitTypeDef* robot_data) {
 	memset(&robot_data->payloadTX, 0, 32);
 	uint8_t switchCase = robot_data->payloadRx[0];
 	robot_data->payloadTX[0] = switchCase;
-
 	switch (switchCase - 0x30) {
 	case CMD_STOP:
+		printf("CMD_STOP\n\r");
 		robot_data->config->state = eRobotStop;
 		vMotor_Control(robot_data->movment->motorLeft, BreakeSoft);
 		vMotor_Control(robot_data->movment->motorRight, BreakeSoft);
@@ -106,7 +105,9 @@ void Robot_PerformAction(RobotData_InitTypeDef* robot_data) {
 				robot_data->movment->motorPID_Right);
 		Scan_falg = 0;
 		robot_data->config->state = eRobotStop;
+		break;
 	case CMD_START:
+		printf("CMD_START\n\r");
 		Scan_falg = 1;
 		vMotorPID_clear(robot_data->movment->motorPID_Left,
 				robot_data->movment->motorPID_Right);
@@ -120,6 +121,7 @@ void Robot_PerformAction(RobotData_InitTypeDef* robot_data) {
 		break;
 	case CMD_GET_DATA:
 		if (robot_data->firstCall) {
+			printf("FirstCall CMD_GET_DATA\n\r");
 			robot_data->firstCall = 0;
 			robot_data->stosResult = popItem(robot_data->stos);
 			if (robot_data->stosResult.object.Iterator != 255) {
@@ -128,14 +130,23 @@ void Robot_PerformAction(RobotData_InitTypeDef* robot_data) {
 				Robot_IntToHex(result, robot_data->stosResult.object.SectorID,
 						4);
 				memcpy(robot_data->payloadTX + 9, &result, 8);
-				robot_data->payloadTX[17] =
-						robot_data->stosResult.object.Iterator;
+
+				char str[15] = { 0 };
+				sprintf(str, "%d", robot_data->stosResult.object.Iterator);
+				memcpy(robot_data->payloadTX + 17, &str, 15);
+
+//				robot_data->payloadTX[17] =
+//						robot_data->stosResult.object.Iterator;
 			} else {
 				sprintf((char*) robot_data->payloadTX,
 						(char*) "5 stack is empty");
+				printf("5 stack is empty\n\r");
 			}
 
 		}
+		printf("buf -> ");
+		printf(robot_data->payloadTX);
+		printf("\n\r");
 		break;
 	default:
 
